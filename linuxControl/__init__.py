@@ -35,9 +35,9 @@ def enableUser(username):
 
 def lockScreensaver(display):
     """Turn on the screensaver"""
-    env = os.environ.copy()
-    env['DISPLAY'] = display
-    result = subprocess.run(['xscreensaver-command', '-lock'], env=env, shell=True, universal_newlines=True,
+    if not 'DISPLAY' in os.environ:
+        os.environ['DISPLAY'] = display
+    result = subprocess.run(['xscreensaver-command', '-lock'], shell=True, universal_newlines=True,
                             stdout=subprocess.PIPE)
 
 def notify(remainingTime, currentDisplay):
@@ -58,9 +58,9 @@ def notify(remainingTime, currentDisplay):
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
-    env = os.environ.copy()
-    env['DISPLAY'] = display
-    result = subprocess.run(['xscreensaver-command', '-time'], env=env, shell=True, universal_newlines=True, stdout=subprocess.PIPE)
+    if not 'DISPLAY' in os.environ:
+        os.environ['DISPLAY'] = display
+    result = subprocess.run(['xscreensaver-command', '-time'], shell=True, universal_newlines=True, stdout=subprocess.PIPE)
     for line in iter(result.stdout.splitlines()):
         match = re.match(r'screen blanked since', line)
         if match:
@@ -76,7 +76,8 @@ if __name__ == '__main__':
     print("Current user is {}\n".format(currentUser))
     disableUser('teo')
     enableUser('teo')
-    print("lockScreensaver({})".format(currentDisplay))
+    print("lockScreensaver({})...\n".format(currentDisplay))
+    lockScreensaver(currentDisplay)
     print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
     notify(5, currentDisplay)
     notify(0, currentDisplay)
