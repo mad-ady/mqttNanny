@@ -7,7 +7,7 @@ import notify2
 
 def getCurrentDisplay():
     """Find the active TTY of this system"""
-    result = subprocess.run(['fgconsole'], stdout=subprocess.PIPE)
+    result = subprocess.run(['fgconsole'], stdout=subprocess.PIPE, universal_newlines=True)
     return result.stdout.rstrip()
 
 def getUserForDisplay(tty):
