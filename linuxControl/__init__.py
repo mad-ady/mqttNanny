@@ -1,5 +1,9 @@
 import subprocess, os
 import re
+#sudo apt-get install python3-notify2
+import notify2
+#sudo apt-get install espeak
+#sudo apt-get install xscreensaver
 
 def getCurrentDisplay():
     """Find the active TTY of this system"""
@@ -36,9 +40,18 @@ def lockScreensaver(display):
     result = subprocess.run(['xscreensaver-command', '-lock'], env=env, shell=True, universal_newlines=True,
                             stdout=subprocess.PIPE)
 
-def notify():
+def notify(remainingTime):
     """Show a notification and audio of remaining time"""
-    pass
+    notify2.init("Nanny")
+    msg = None
+    if remainingTime:
+        msg = "{} minutes left".format(str(remainingTime))
+    else:
+        msg = "Time's up!"
+    n = notify2.Notification(msg, msg, "notification-power-disconnected" )
+    n.show()
+    #have it speak via espeak
+    subprocess.check_output('echo "'+ msg +'" | espeak', shell=True)
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
@@ -62,3 +75,6 @@ if __name__ == '__main__':
     enableUser('teo')
     print("lockScreensaver({})".format(currentDisplay))
     print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
+    notify(5)
+    notify(0)
+
