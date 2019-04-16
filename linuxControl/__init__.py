@@ -5,6 +5,30 @@ import notify2
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
 
+import logging
+from logging.config import dictConfig
+
+logging_config = dict(
+    version = 1,
+    formatters = {
+        'f': {'format':
+              '%(asctime)s %(levelname)-8s [%(funcName)s:%(lineno)d] %(message)s'}
+    },
+    handlers = {
+        'c': {'class': 'logging.StreamHandler',
+              'formatter': 'f',
+              'level': logging.DEBUG,
+              'stream': "ext://sys.stdout" }
+    },
+    root = {
+        'handlers': ['c'],
+        'level': logging.DEBUG,
+    },
+)
+
+dictConfig(logging_config)
+logger = logging.getLogger(__name__)
+
 def getCurrentDisplay():
     """Find the active TTY of this system"""
     result = subprocess.run(['fgconsole'], stdout=subprocess.PIPE, universal_newlines=True)
@@ -37,8 +61,10 @@ def lockScreensaver(display):
     """Turn on the screensaver"""
     if not 'DISPLAY' in os.environ:
         os.environ['DISPLAY'] = display
+
     result = subprocess.run(['xscreensaver-command', '-lock'], shell=True, universal_newlines=True,
                             stdout=subprocess.PIPE)
+    logger.debug("{}".format(result.args))
 
 def notify(remainingTime, currentDisplay):
     """Show a notification and audio of remaining time"""
@@ -61,6 +87,7 @@ def isScreensaverOn(display):
     if not 'DISPLAY' in os.environ:
         os.environ['DISPLAY'] = display
     result = subprocess.run(['xscreensaver-command', '-time'], shell=True, universal_newlines=True, stdout=subprocess.PIPE)
+    logger.debug("{}".format(result.args))
     for line in iter(result.stdout.splitlines()):
         match = re.match(r'screen blanked since', line)
         if match:
