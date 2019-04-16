@@ -40,8 +40,10 @@ def lockScreensaver(display):
     result = subprocess.run(['xscreensaver-command', '-lock'], env=env, shell=True, universal_newlines=True,
                             stdout=subprocess.PIPE)
 
-def notify(remainingTime):
+def notify(remainingTime, currentDisplay):
     """Show a notification and audio of remaining time"""
+    if not 'DISPLAY' in os.environ:
+        os.environ['DISPLAY'] = currentDisplay
     notify2.init("Nanny")
     msg = None
     if remainingTime:
@@ -49,6 +51,7 @@ def notify(remainingTime):
     else:
         msg = "Time's up!"
     n = notify2.Notification(msg, msg, "notification-power-disconnected" )
+    n.set_timeout(5000)
     n.show()
     #have it speak via espeak
     subprocess.check_output('echo "'+ msg +'" | espeak', shell=True)
@@ -75,6 +78,6 @@ if __name__ == '__main__':
     enableUser('teo')
     print("lockScreensaver({})".format(currentDisplay))
     print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
-    notify(5)
-    notify(0)
+    notify(5, currentDisplay)
+    notify(0, currentDisplay)
 
