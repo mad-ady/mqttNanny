@@ -87,7 +87,7 @@ def isScreensaverOn(display):
         os.environ['DISPLAY'] = display
     result = subprocess.check_output('xscreensaver-command -time', shell=True, universal_newlines=True)
 
-    for line in iter(result.stdout.splitlines()):
+    for line in iter(result.splitlines()):
         match = re.match(r'screen blanked since', line)
         if match:
             return True
