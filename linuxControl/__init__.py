@@ -99,13 +99,17 @@ if __name__ == '__main__':
     """Do a bit of unit testing"""
     currentTTY = getCurrentDisplay()
     print("Current display is {}\n".format(currentTTY))
-    (currentUser, currentDisplay) = getUserForDisplay(currentTTY)
-    print("Current user is {}\n".format(currentUser))
+    try:
+        (currentUser, currentDisplay) = getUserForDisplay(currentTTY)
+        print("Current user is {}\n".format(currentUser))
+        print("lockScreensaver({})...\n".format(currentDisplay))
+        lockScreensaver(currentDisplay)
+        print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
+        notify(5, currentDisplay)
+        notify(0, currentDisplay)
+    except Exception as e:
+        print(e)
     disableUser('teo')
     enableUser('teo')
-    print("lockScreensaver({})...\n".format(currentDisplay))
-    lockScreensaver(currentDisplay)
-    print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
-    notify(5, currentDisplay)
-    notify(0, currentDisplay)
+
 
