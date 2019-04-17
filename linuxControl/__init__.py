@@ -2,6 +2,7 @@ import subprocess, os
 import re
 #sudo apt-get install python3-notify2
 import notify2
+import time
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
 #sudo apt-get install xdotool
@@ -107,6 +108,7 @@ if __name__ == '__main__':
         print("Current application name is {}\n".format(getActiveWindowName(currentDisplay)))
         print("lockScreensaver({})...\n".format(currentDisplay))
         lockScreensaver(currentDisplay)
+        time.sleep(2)
         print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
         notify(5, currentDisplay)
         notify(0, currentDisplay)
