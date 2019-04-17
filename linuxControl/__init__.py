@@ -127,7 +127,7 @@ if __name__ == '__main__':
         notify(0, currentDisplay)
         time.sleep(2)
         print("Grabbing a screenshot and saving it as screenshot.jpg...")
-        jpg = getScreenshot(currentDisplay, 0)
+        jpg = getScreenshot(currentDisplay, 720)
         with open('screenshot.jpg', 'wb') as file:
             file.write(jpg)
 
