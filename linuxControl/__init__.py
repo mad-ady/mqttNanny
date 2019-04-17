@@ -79,7 +79,7 @@ def notify(remainingTime, currentDisplay):
     n.set_timeout(5000)
     n.show()
     #have it speak via espeak
-    subprocess.check_output('echo "'+ msg +'" | espeak', shell=True)
+    subprocess.run('echo "'+ msg +'" | espeak', shell=True, check=False)
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
@@ -88,6 +88,7 @@ def isScreensaverOn(display):
     result = subprocess.run('xscreensaver-command -time', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
 
     for line in iter(result.stdout.splitlines()):
+        logger.debug(line)
         match = re.match(r'screen blanked since', line)
         if match:
             return True
