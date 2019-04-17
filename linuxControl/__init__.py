@@ -108,7 +108,7 @@ def getScreenshot(display, yres=0):
         resize = '-resize x{}'.format(str(yres))
     command = 'xwd -root -display {}  | convert xwd:- {} jpg:- '.format(display, resize)
     logger.debug(command)
-    result = subprocess.run(command)
+    result = subprocess.run(command, shell=True, check=False, stdout=subprocess.PIPE)
     return result.stdout
 
 if __name__ == '__main__':
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         jpg = getScreenshot(currentDisplay, 0)
         with open('screenshot.jpg', 'wb') as file:
             file.write()
-            
+
     except Exception as e:
         print(e)
     disableUser('teo')
