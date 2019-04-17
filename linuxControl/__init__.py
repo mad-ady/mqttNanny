@@ -62,7 +62,7 @@ def lockScreensaver(display):
     if not 'DISPLAY' in os.environ:
         os.environ['DISPLAY'] = display
 
-    subprocess.check_output('xscreensaver-command -lock', shell=True, universal_newlines=True)
+    subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False)
 
 
 def notify(remainingTime, currentDisplay):
@@ -85,9 +85,9 @@ def isScreensaverOn(display):
     """Is the screensaver active?"""
     if not 'DISPLAY' in os.environ:
         os.environ['DISPLAY'] = display
-    result = subprocess.check_output('xscreensaver-command -time', shell=True, universal_newlines=True)
+    result = subprocess.run('xscreensaver-command -time', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
 
-    for line in iter(result.splitlines()):
+    for line in iter(result.stdout.splitlines()):
         match = re.match(r'screen blanked since', line)
         if match:
             return True
