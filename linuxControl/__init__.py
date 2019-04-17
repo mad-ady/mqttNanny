@@ -6,6 +6,7 @@ import time
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
 #sudo apt-get install xdotool
+#sudo apt-get install imagemagick
 
 import logging
 from logging.config import dictConfig
@@ -98,6 +99,18 @@ def isScreensaverOn(display):
         else:
             return False
 
+def getScreenshot(display, yres=0):
+    """Grab a screenshot of the active display and convert it to jpeg.
+        Returns the binary jpeg data as bytes."""
+    resize = ''
+    if yres != 0:
+        #specific resolution
+        resize = '-resize x{}'.format(str(yres))
+    command = 'xwd -root -display {}  | convert xwd:- {} jpg:- '.format(display, resize)
+    logger.debug(command)
+    result = subprocess.run(command)
+    return result.stdout
+
 if __name__ == '__main__':
     """Do a bit of unit testing"""
     currentTTY = getCurrentDisplay()
@@ -108,10 +121,16 @@ if __name__ == '__main__':
         print("Current application name is {}\n".format(getActiveWindowName(currentDisplay)))
         print("lockScreensaver({})...\n".format(currentDisplay))
         lockScreensaver(currentDisplay)
-        time.sleep(2)
+        time.sleep(5)
         print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
         notify(5, currentDisplay)
         notify(0, currentDisplay)
+        time.sleep(2)
+        print("Grabbing a screenshot and saving it as screenshot.jpg...")
+        jpg = getScreenshot(currentDisplay, 0)
+        with open('screenshot.jpg', 'wb') as file:
+            file.write()
+            
     except Exception as e:
         print(e)
     disableUser('teo')
