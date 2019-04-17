@@ -129,7 +129,7 @@ if __name__ == '__main__':
         print("Grabbing a screenshot and saving it as screenshot.jpg...")
         jpg = getScreenshot(currentDisplay, 0)
         with open('screenshot.jpg', 'wb') as file:
-            file.write()
+            file.write(jpg)
 
     except Exception as e:
         print(e)
