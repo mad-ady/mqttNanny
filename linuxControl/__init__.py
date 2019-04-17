@@ -4,6 +4,7 @@ import re
 import notify2
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
+#sudo apt-get install xdotool
 
 import logging
 from logging.config import dictConfig
@@ -59,16 +60,18 @@ def enableUser(username):
 
 def lockScreensaver(display):
     """Turn on the screensaver"""
-    if not 'DISPLAY' in os.environ:
-        os.environ['DISPLAY'] = display
-
+    os.environ['DISPLAY'] = display
     subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False)
 
+def getActiveWindowName(display):
+    """Get the name/titlebar of the active window"""
+    os.environ['DISPLAY'] = display
+    result = subprocess.run('xdotool getwindowfocus getwindowname', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
+    return result.stdout.rstrip()
 
 def notify(remainingTime, currentDisplay):
     """Show a notification and audio of remaining time"""
-    if not 'DISPLAY' in os.environ:
-        os.environ['DISPLAY'] = currentDisplay
+    os.environ['DISPLAY'] = currentDisplay
     notify2.init("Nanny")
     msg = None
     if remainingTime:
@@ -83,8 +86,7 @@ def notify(remainingTime, currentDisplay):
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
-    if not 'DISPLAY' in os.environ:
-        os.environ['DISPLAY'] = display
+    os.environ['DISPLAY'] = display
     result = subprocess.run('xscreensaver-command -time', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
 
     for line in iter(result.stdout.splitlines()):
@@ -102,6 +104,7 @@ if __name__ == '__main__':
     try:
         (currentUser, currentDisplay) = getUserForDisplay(currentTTY)
         print("Current user is {}\n".format(currentUser))
+        print("Current application name is {}\n".format(getActiveWindowName(currentDisplay)))
         print("lockScreensaver({})...\n".format(currentDisplay))
         lockScreensaver(currentDisplay)
         print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
