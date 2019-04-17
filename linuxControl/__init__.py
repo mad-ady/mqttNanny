@@ -89,7 +89,7 @@ def isScreensaverOn(display):
 
     for line in iter(result.stdout.splitlines()):
         logger.debug(line)
-        match = re.match(r'screen blanked since', line)
+        match = re.match(r'screen (blanked|locked) since', line)
         if match:
             return True
         else:
