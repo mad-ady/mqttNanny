@@ -1,0 +1,13 @@
+[Unit]
+Description=mqttNanny
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mqttNanny.py
+Type=simple
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

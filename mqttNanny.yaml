@@ -1,0 +1,14 @@
+mqttServer: '127.0.0.1'
+mqttPort: 1883
+mqttUser: 'homeassistant'
+mqttPass: 'your-super-secret-mqtt-password'
+baseTopic: '/ha/pc/'
+mqttTimeTopicSuffix: 'timeRemaining'
+mqttScreenshot: '/ha/pc/screenshot'
+mqttScreenshotCommand: '/ha/pc/screenshot/command'
+checkInterval: 60
+users:
+  - username1:
+    defaultOfflineTime: 60
+  - username2:
+    defaultOfflineTime: 60
