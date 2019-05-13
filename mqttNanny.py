@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import linuxControl as computer
 import paho.mqtt.client as mqtt
 import yaml
@@ -38,6 +39,9 @@ logger = logging.getLogger(__name__)
 #sudo apt-get install xscreensaver
 #sudo apt-get install xdotool
 #sudo apt-get install imagemagick
+
+# On every account that you want to monitor you need to allow root to run X11 commands. On client login run:
+# xhost si:localuser:root
 
 # Configuration file goes in /etc/mqttNanny.yaml and should be similar to the example provided
 
@@ -97,18 +101,16 @@ def on_message(client, userdata, msg):
             # kill the screenshot thread if it exists
         	pass
     if msg.topic in timeTopics.keys():
+        logger.debug("Processing {} for user {}".format(msg.topic, timeTopics[msg.topic]))
         #msg.payload should be the number of minutes left
         if t[timeTopics[msg.topic]] != int(msg.payload):
+            oldTime = t[timeTopics[msg.topic]]
+            logger.info("Set new time {} for user {}".format(int(msg.payload), timeTopics[msg.topic]))
             t[timeTopics[msg.topic]] = int(msg.payload)
-            if t[timeTopics[msg.topic]] > 0:
+            if t[timeTopics[msg.topic]] > 0 and oldTime <= 0:
+                logger.info("Restoring user {}".format(timeTopics[msg.topic]))
                 #might have been disabled, restore the user
-                tty = computer.getCurrentDisplay()
-                #get active user
-                try:
-                   (activeUser, display) = computer.getUserForDisplay(tty)
-                   computer.enableUser(activeUser)
-                except Exception as e:
-                    logger.warning(e)
+                computer.enableUser(timeTopics[msg.topic])
 
 
 """ Initialize the MQTT object and connect to the server """
@@ -119,13 +121,7 @@ for user in conf['users']:
     t[user]=conf['users'][user]['defaultOfflineTime']
     logger.info("Loaded {} default minutes for {}".format(str(t[user]), user))
     # also, enable user (might have been disabled)
-    tty = computer.getCurrentDisplay()
-    # get active user
-    try:
-        (activeUser, display) = computer.getUserForDisplay(tty)
-        computer.enableUser(activeUser)
-    except Exception as e:
-        logger.warning(e)
+    computer.enableUser(user)
 
 client = mqtt.Client()
 client.on_connect = on_connect
@@ -139,40 +135,44 @@ oldDisplay=None
 oldActiveUser=None
 oldScreensaver=None
 oldApplication=None
+client.loop_start()
 
 """	Main processing loop. Keep track of time for each user """
 
 while True:
+    """ Before starting give mqtt a chance to connect and get the remote data """
+    time.sleep(int(conf['checkInterval']))
+
     #get active display
     tty=computer.getCurrentDisplay()
     if tty != oldTTY:
         #update the new value via mqtt
         oldTTY = tty
         if client:
-            client.publish(conf['baseTopic']+'tty', tty, 0, False)
+            client.publish(conf['baseTopic']+'tty', tty, 0, True)
     #get active user
     try:
         (activeUser, display) = computer.getUserForDisplay(tty)
         if activeUser != oldActiveUser:
             oldActiveUser = activeUser
             if client:
-                client.publish(conf['baseTopic']+'activeUser', activeUser, 0, False)
+                client.publish(conf['baseTopic']+'activeUser', activeUser, 0, True)
         if display != oldDisplay:
             oldDisplay = display
             if client:
-                client.publish(conf['baseTopic']+'display', display, 0, False)
+                client.publish(conf['baseTopic']+'display', display, 0, True)
         #is screensaver active?
         screensaver = computer.isScreensaverOn(display)
         if screensaver != oldScreensaver:
             oldScreensaver = screensaver
             if client:
-                client.publish(conf['baseTopic']+'screensaver', screensaver, 0, False)
+                client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
         #current application name
         application = computer.getActiveWindowName(display)
         if application != oldApplication:
             oldApplication = application
             if client:
-                client.publish(conf['baseTopic']+'application', application, 0, False)
+                client.publish(conf['baseTopic']+'application', application, 0, True)
 		
         # Check if the current user still has time allowed. Active screensaver does not consume time
         if not screensaver:
@@ -194,22 +194,23 @@ while True:
                 computer.disableUser(activeUser)
                 computer.lockScreensaver(display)
             if client:
-                client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, False)
+
+                client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
 
     except Exception as e:
         logger.warning(e)
         #invalidate the mqtt topics
         if client:
-            client.publish(conf['baseTopic']+'activeUser', 'None', 0, False)
-            client.publish(conf['baseTopic']+'display', 'None', 0, False)
-            client.publish(conf['baseTopic']+'screensaver', False, 0, False)
-            client.publish(conf['baseTopic']+'application', 'None', 0, False)
+            client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)
+            client.publish(conf['baseTopic']+'display', 'None', 0, True)
+            client.publish(conf['baseTopic']+'screensaver', False, 0, True)
+            client.publish(conf['baseTopic']+'application', 'None', 0, True)
 
-    if client:
-        logger.debug("Processing mqtt messages")
-        client.loop()
+#    if client:
+#        logger.debug("Processing mqtt messages")
+#        client.loop()
 
-    time.sleep(int(conf['checkInterval']))
+
 
 #listen for messages and call on_message when needed
 #logger.debug("Listen to MQTT messages...\n")
