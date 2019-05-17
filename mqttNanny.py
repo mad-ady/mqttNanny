@@ -161,12 +161,19 @@ while True:
             oldDisplay = display
             if client:
                 client.publish(conf['baseTopic']+'display', display, 0, True)
+
+        #check if root can run X11 applications and access the user's display
+        if not computer.hasRootAccessToDisplay(display):
+            logger.info("Allowing root access for display {}".format(display))
+            computer.giveRootAccessToDisplay(activeUser, display)
+
         #is screensaver active?
         screensaver = computer.isScreensaverOn(display)
         if screensaver != oldScreensaver:
             oldScreensaver = screensaver
             if client:
                 client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
+
         #current application name
         application = "Screensaver"
         if not screensaver:

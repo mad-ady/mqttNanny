@@ -60,6 +60,19 @@ def enableUser(username):
     """Enable a system account"""
     subprocess.run(['passwd', '--unlock', username], stdout=subprocess.PIPE, universal_newlines=True)
 
+def giveRootAccessToDisplay(user, display):
+    """Allow root user to query/run programs on other user's displays"""
+    subprocess.run('sudo -u {} DISPLAY={} xhost si:localuser:root'.format(user, display), shell=True, universal_newlines=True, check=False)
+
+def hasRootAccessToDisplay(display):
+    """Check if the user can run programs on the user's display"""
+    os.environ['DISPLAY'] = display
+    result = subprocess.run('xdotool get_desktop', shell=True, check=False)
+    if result.returncode:
+        return False
+    else:
+        return True
+
 def lockScreensaver(display):
     """Turn on the screensaver"""
     os.environ['DISPLAY'] = display
