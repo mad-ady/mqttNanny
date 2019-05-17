@@ -168,7 +168,9 @@ while True:
             if client:
                 client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
         #current application name
-        application = computer.getActiveWindowName(display)
+        application = "Screensaver"
+        if not screensaver:
+            application = computer.getActiveWindowName(display)
         if application != oldApplication:
             oldApplication = application
             if client:
