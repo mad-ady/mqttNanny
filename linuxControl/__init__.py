@@ -67,7 +67,7 @@ def giveRootAccessToDisplay(user, display):
 def hasRootAccessToDisplay(display):
     """Check if the user can run programs on the user's display"""
     os.environ['DISPLAY'] = display
-    result = subprocess.run('xdotool get_desktop', shell=True, check=False)
+    result = subprocess.run('xdotool get_desktop', stdout=subprocess.PIPE, shell=True, check=False)
     if result.returncode:
         return False
     else:
