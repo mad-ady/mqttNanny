@@ -218,13 +218,7 @@ while True:
             client.publish(conf['baseTopic']+'display', 'None', 0, True)
             client.publish(conf['baseTopic']+'screensaver', False, 0, True)
             client.publish(conf['baseTopic']+'application', 'None', 0, True)
-
-#    if client:
-#        logger.debug("Processing mqtt messages")
-#        client.loop()
-
-
-
-#listen for messages and call on_message when needed
-#logger.debug("Listen to MQTT messages...\n")
-#client.loop_forever()
+            oldActiveUser=None
+            oldDisplay=None
+            oldScreensaver=None
+            oldApplication=None
