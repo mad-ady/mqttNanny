@@ -149,6 +149,7 @@ while True:
         #update the new value via mqtt
         oldTTY = tty
         if client:
+            logger.debug("TTY change: {}".format(tty))
             client.publish(conf['baseTopic']+'tty', tty, 0, True)
     #get active user
     try:
@@ -156,10 +157,12 @@ while True:
         if activeUser != oldActiveUser:
             oldActiveUser = activeUser
             if client:
+                logger.debug("User change: {}".format(activeUser))
                 client.publish(conf['baseTopic']+'activeUser', activeUser, 0, True)
         if display != oldDisplay:
             oldDisplay = display
             if client:
+                logger.debug("Display change: {}".format(display))
                 client.publish(conf['baseTopic']+'display', display, 0, True)
 
         #check if root can run X11 applications and access the user's display
@@ -172,6 +175,7 @@ while True:
         if screensaver != oldScreensaver:
             oldScreensaver = screensaver
             if client:
+                logger.debug("Screensaver change: {}".format(screensaver))
                 client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
 
         #current application name
@@ -181,6 +185,7 @@ while True:
         if application != oldApplication:
             oldApplication = application
             if client:
+                logger.debug("Application change: {}".format(application))
                 client.publish(conf['baseTopic']+'application', application, 0, True)
 		
         # Check if the current user still has time allowed. Active screensaver does not consume time
@@ -203,7 +208,6 @@ while True:
                 computer.disableUser(activeUser)
                 computer.lockScreensaver(display)
             if client:
-
                 client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
 
     except Exception as e:
