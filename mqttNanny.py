@@ -128,7 +128,11 @@ client.on_connect = on_connect
 client.on_message = on_message
 if conf['mqttUser'] and conf['mqttPass']:
     client.username_pw_set(username=conf['mqttUser'], password=conf['mqttPass'])
-client.connect(conf['mqttServer'], conf['mqttPort'], 60)
+try:
+    client.connect(conf['mqttServer'], conf['mqttPort'], 60)
+except:
+    logger.warning("Unable to connect to MQTT Broker. Running with local limits")
+    pass
 
 oldTTY=None
 oldDisplay=None
@@ -136,7 +140,10 @@ oldActiveUser=None
 oldScreensaver=None
 oldApplication=None
 
-client.loop_start()
+try:
+    client.loop_start()
+except:
+    pass
 
 """	Main processing loop. Keep track of time for each user """
 
