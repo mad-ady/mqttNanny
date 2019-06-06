@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 # Prerequisites:
-# * pip: sudo apt-get install python-pip
+# * pip: sudo apt-get install python3-pip
 # * paho-mqtt: sudo pip3 install paho-mqtt
 # * python-yaml: sudo apt-get install python3-yaml
 # * notify2: sudo apt-get install python3-notify2
@@ -135,6 +135,7 @@ oldDisplay=None
 oldActiveUser=None
 oldScreensaver=None
 oldApplication=None
+
 client.loop_start()
 
 """	Main processing loop. Keep track of time for each user """
