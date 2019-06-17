@@ -162,101 +162,117 @@ if conf['externalNotify']:
         timekeeping="local"
     computer.externalNotify(conf['externalNotify'], "Starting mqttNanny main loop. Timekeeping is {}".format(timekeeping))
 
-while True:
-    """ Before starting give mqtt a chance to connect and get the remote data """
-    time.sleep(int(conf['checkInterval']))
+try:
+    while True:
+        """ Before starting give mqtt a chance to connect and get the remote data """
+        time.sleep(int(conf['checkInterval']))
 
-    #get active display
-    tty=computer.getCurrentDisplay()
-    if tty != oldTTY:
-        #update the new value via mqtt
-        oldTTY = tty
-        if client:
-            logger.debug("TTY change: {}".format(tty))
-            client.publish(conf['baseTopic']+'tty', tty, 0, True)
-    #get active user
-    try:
-        (activeUser, display) = computer.getUserForDisplay(tty)
-        if activeUser != oldActiveUser:
-            oldActiveUser = activeUser
+        #get active display
+        tty=computer.getCurrentDisplay()
+        if tty != oldTTY:
+            #update the new value via mqtt
+            oldTTY = tty
             if client:
-                logger.debug("User change: {}".format(activeUser))
-                client.publish(conf['baseTopic']+'activeUser', activeUser, 0, True)
-        if display != oldDisplay:
-            oldDisplay = display
-            if client:
-                logger.debug("Display change: {}".format(display))
-                client.publish(conf['baseTopic']+'display', display, 0, True)
+                logger.debug("TTY change: {}".format(tty))
+                client.publish(conf['baseTopic']+'tty', tty, 0, True)
+        #get active user
+        try:
+            (activeUser, display) = computer.getUserForDisplay(tty)
+            if activeUser != oldActiveUser:
+                oldActiveUser = activeUser
+                if client:
+                    logger.debug("User change: {}".format(activeUser))
+                    client.publish(conf['baseTopic']+'activeUser', activeUser, 0, True)
+            if display != oldDisplay:
+                oldDisplay = display
+                if client:
+                    logger.debug("Display change: {}".format(display))
+                    client.publish(conf['baseTopic']+'display', display, 0, True)
 
-        #check if root can run X11 applications and access the user's display
-        if not computer.hasRootAccessToDisplay(display):
-            logger.info("Allowing root access for display {}".format(display))
-            computer.giveRootAccessToDisplay(activeUser, display)
+            #check if root can run X11 applications and access the user's display
+            if not computer.hasRootAccessToDisplay(display):
+                logger.info("Allowing root access for display {}".format(display))
+                computer.giveRootAccessToDisplay(activeUser, display)
 
-        #is screensaver active?
-        screensaver = computer.isScreensaverOn(display)
-        if screensaver != oldScreensaver:
-            oldScreensaver = screensaver
-            if client:
-                logger.debug("Screensaver change: {}".format(screensaver))
-                client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
+            #is screensaver active?
+            screensaver = computer.isScreensaverOn(display)
+            if screensaver != oldScreensaver:
+                oldScreensaver = screensaver
+                if client:
+                    logger.debug("Screensaver change: {}".format(screensaver))
+                    client.publish(conf['baseTopic']+'screensaver', screensaver, 0, True)
 
-        #current application name
-        application = "Screensaver"
-        if not screensaver:
-            application = computer.getActiveWindowName(display)
-        if application != oldApplication:
-            oldApplication = application
-            if client:
-                logger.debug("Application change: {}".format(application))
-                client.publish(conf['baseTopic']+'application', application, 0, True)
-            if conf['externalNotify']:
-                computer.externalNotify(conf['externalNotify'],
-                                        "Application change: {}".format(application))
-		
-        # Check if the current user still has time allowed. Active screensaver does not consume time
-        if not screensaver:
-            t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
-            logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
-            if t[activeUser] == 10:
-                # 10 minutes left
-                computer.notify(10, display)
+            #current application name
+            application = "Screensaver"
+            if not screensaver:
+                application = computer.getActiveWindowName(display)
+            if application != oldApplication:
+                oldApplication = application
+                if client:
+                    logger.debug("Application change: {}".format(application))
+                    client.publish(conf['baseTopic']+'application', application, 0, True)
                 if conf['externalNotify']:
                     computer.externalNotify(conf['externalNotify'],
-                                            "{} minutes left for {}".format(t[activeUser], activeUser))
-            if t[activeUser] == 5:
-                # 5 minutes left
-                computer.notify(5, display)
-                if conf['externalNotify']:
-                    computer.externalNotify(conf['externalNotify'],
-                                            "{} minutes left for {}".format(t[activeUser], activeUser))
-            if t[activeUser] == 1:
-                # final warning
-                computer.notify(1, display)
-                if conf['externalNotify']:
-                    computer.externalNotify(conf['externalNotify'],
-                                            "{} minutes left for {}".format(t[activeUser], activeUser))
-            if t[activeUser] <= 0:
-                computer.notify(0, display)
-                if conf['externalNotify']:
-                    computer.externalNotify(conf['externalNotify'],
-                                            "{} minutes left for {}".format(t[activeUser], activeUser))
-                time.sleep(4)
-                # lock screensaver and disable user
-                computer.disableUser(activeUser)
-                computer.lockScreensaver(display)
-            if client:
-                client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
+                                            "Application change: {}".format(application))
 
-    except Exception as e:
-        logger.warning(e)
-        #invalidate the mqtt topics
-        if client:
-            client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)
-            client.publish(conf['baseTopic']+'display', 'None', 0, True)
-            client.publish(conf['baseTopic']+'screensaver', False, 0, True)
-            client.publish(conf['baseTopic']+'application', 'None', 0, True)
-            oldActiveUser=None
-            oldDisplay=None
-            oldScreensaver=None
-            oldApplication=None
+            # Check if the current user still has time allowed. Active screensaver does not consume time
+            if not screensaver:
+                t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
+                logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
+                if t[activeUser] == 10:
+                    # 10 minutes left
+                    computer.notify(10, display)
+                    if conf['externalNotify']:
+                        computer.externalNotify(conf['externalNotify'],
+                                                "{} minutes left for {}".format(t[activeUser], activeUser))
+                if t[activeUser] == 5:
+                    # 5 minutes left
+                    computer.notify(5, display)
+                    if conf['externalNotify']:
+                        computer.externalNotify(conf['externalNotify'],
+                                                "{} minutes left for {}".format(t[activeUser], activeUser))
+                if t[activeUser] == 1:
+                    # final warning
+                    computer.notify(1, display)
+                    if conf['externalNotify']:
+                        computer.externalNotify(conf['externalNotify'],
+                                                "{} minutes left for {}".format(t[activeUser], activeUser))
+                if t[activeUser] <= 0:
+                    computer.notify(0, display)
+                    if conf['externalNotify']:
+                        computer.externalNotify(conf['externalNotify'],
+                                                "{} minutes left for {}".format(t[activeUser], activeUser))
+                    time.sleep(4)
+                    # lock screensaver and disable user
+                    computer.disableUser(activeUser)
+                    computer.lockScreensaver(display)
+                if client:
+                    client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
+
+        except Exception as e:
+            logger.warning(e)
+            #invalidate the mqtt topics
+            if client:
+                client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)
+                client.publish(conf['baseTopic']+'display', 'None', 0, True)
+                client.publish(conf['baseTopic']+'screensaver', False, 0, True)
+                client.publish(conf['baseTopic']+'application', 'None', 0, True)
+                oldActiveUser=None
+                oldDisplay=None
+                oldScreensaver=None
+                oldApplication=None
+finally:
+    #execute this block on service stop (or system shutdown)
+    logger.warning("mqttNanny is stopping...")
+    if conf['externalNotify']:
+        computer.externalNotify(conf['externalNotify'], "mqttNanny is stopping")
+    #invalidate the mqtt topics
+    if client:
+        client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)
+        client.publish(conf['baseTopic']+'display', 'None', 0, True)
+        client.publish(conf['baseTopic']+'screensaver', False, 0, True)
+        client.publish(conf['baseTopic']+'application', 'None', 0, True)
+        oldActiveUser=None
+        oldDisplay=None
+        oldScreensaver=None
+        oldApplication=None
