@@ -18,10 +18,17 @@ logging_config = dict(
         'c': {'class': 'logging.StreamHandler',
               'formatter': 'f',
               'level': logging.DEBUG,
-              'stream': "ext://sys.stdout" }
+              'stream': "ext://sys.stdout" },
+        'f': {
+              'class': 'logging.handlers.RotatingFileHandler',
+              'formatter': 'f',
+              'filename': '/var/log/mqttNanny.log',
+              'maxBytes': 1000000,
+              'backupCount': 4
+        }
     },
     root = {
-        'handlers': ['c'],
+        'handlers': ['c','f'],
         'level': logging.DEBUG,
     },
 )
