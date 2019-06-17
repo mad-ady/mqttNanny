@@ -135,10 +135,13 @@ client.on_connect = on_connect
 client.on_message = on_message
 if conf['mqttUser'] and conf['mqttPass']:
     client.username_pw_set(username=conf['mqttUser'], password=conf['mqttPass'])
+running_local=False
 try:
     client.connect(conf['mqttServer'], conf['mqttPort'], 60)
+    running_local=False
 except:
     logger.warning("Unable to connect to MQTT Broker. Running with local limits")
+    running_local=True
     pass
 
 oldTTY=None
@@ -153,6 +156,11 @@ except:
     pass
 
 """	Main processing loop. Keep track of time for each user """
+if conf['externalNotify']:
+    timekeeping="remote"
+    if(running_local):
+        timekeeping="local"
+    computer.externalNotify(conf['externalNotify'], "Starting mqttNanny main loop. Timekeeping is {}".format(timekeeping))
 
 while True:
     """ Before starting give mqtt a chance to connect and get the remote data """
@@ -202,6 +210,9 @@ while True:
             if client:
                 logger.debug("Application change: {}".format(application))
                 client.publish(conf['baseTopic']+'application', application, 0, True)
+            if conf['externalNotify']:
+                computer.externalNotify(conf['externalNotify'],
+                                        "Application change: {}".format(application))
 		
         # Check if the current user still has time allowed. Active screensaver does not consume time
         if not screensaver:
@@ -210,14 +221,26 @@ while True:
             if t[activeUser] == 10:
                 # 10 minutes left
                 computer.notify(10, display)
+                if conf['externalNotify']:
+                    computer.externalNotify(conf['externalNotify'],
+                                            "{} minutes left for {}".format(t[activeUser], activeUser))
             if t[activeUser] == 5:
                 # 5 minutes left
                 computer.notify(5, display)
+                if conf['externalNotify']:
+                    computer.externalNotify(conf['externalNotify'],
+                                            "{} minutes left for {}".format(t[activeUser], activeUser))
             if t[activeUser] == 1:
                 # final warning
                 computer.notify(1, display)
+                if conf['externalNotify']:
+                    computer.externalNotify(conf['externalNotify'],
+                                            "{} minutes left for {}".format(t[activeUser], activeUser))
             if t[activeUser] <= 0:
                 computer.notify(0, display)
+                if conf['externalNotify']:
+                    computer.externalNotify(conf['externalNotify'],
+                                            "{} minutes left for {}".format(t[activeUser], activeUser))
                 time.sleep(4)
                 # lock screensaver and disable user
                 computer.disableUser(activeUser)

@@ -7,6 +7,7 @@ mqttTimeTopicSuffix: 'timeRemaining'
 mqttScreenshot: 'ha/pc/screenshot'
 mqttScreenshotCommand: 'ha/pc/screenshot/command'
 checkInterval: 60
+externalNotify: False
 users:
   username1:
     defaultOfflineTime: 60
