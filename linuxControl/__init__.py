@@ -31,6 +31,9 @@ logging_config = dict(
 
 dictConfig(logging_config)
 logger = logging.getLogger(__name__)
+def externalNotify(program, message):
+    """Send a message out via telegram or external script"""
+    subprocess.run([program, message], stdout=subprocess.PIPE, universal_newlines=True)
 
 def getCurrentDisplay():
     """Find the active TTY of this system"""
@@ -97,7 +100,10 @@ def notify(remainingTime, currentDisplay):
     n.set_timeout(5000)
     n.show()
     #have it speak via espeak
-    subprocess.run('echo "'+ msg +'" | espeak', shell=True, check=False)
+    try:
+      subprocess.run('echo "'+ msg +'" | espeak', shell=True, check=False, timeout=5)
+    except:
+        pass
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
