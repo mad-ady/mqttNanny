@@ -3,6 +3,7 @@ import linuxControl as computer
 import paho.mqtt.client as mqtt
 import yaml
 import os
+import traceback
 import threading
 import time
 import logging
@@ -101,12 +102,18 @@ def on_message(client, userdata, msg):
         timeTopics[topic]=user
     	
     if msg.topic == conf['mqttScreenshotCommand']:
-        if msg.payload == 'enable':
-            # start a thread that will periodically post back screenshots for a set interval of time. At the end, it disables itself            
-            pass
-        if msg.payload == 'disable':
+        logger.debug("Received payload {}".format(msg.payload))
+        if msg.payload.decode() == 'enable':
+            # start a thread that will periodically post back screenshots for a set interval of time. At the end, it disables itself
+            logger.debug("Enabling screenshots")
+            startScreenshotTimer(int(conf['mqttScreenshotDuration']))
+            startScreenshotThread(int(conf['mqttScreenshotInterval']))
+        if msg.payload.decode() == 'disable':
             # kill the screenshot thread if it exists
-        	pass
+            logger.debug("Disabling screenshots")
+            if activeScreenshotTimer:
+                stopScreenshotTimer()
+
     if msg.topic in timeTopics.keys():
         logger.debug("Processing {} for user {}".format(msg.topic, timeTopics[msg.topic]))
         #msg.payload should be the number of minutes left
@@ -119,16 +126,79 @@ def on_message(client, userdata, msg):
                 #might have been disabled, restore the user
                 computer.enableUser(timeTopics[msg.topic])
 
+def startScreenshotTimer(duration):
+    """Start a thread that automatically disables the screenshot after a given time"""
+    global activeScreenshotTimer
+    logger.info("Starting screenshot timer for {} seconds".format(duration))
+    print("ActiveScreenshotTimer is {}".format(type(activeScreenshotTimer)))
+    if activeScreenshotTimer:
+        logger.debug("activeScreenshotTimer was active - stopping it")
+        activeScreenshotTimer.cancel()
+    logger.debug("Creating a new Timer")
+    activeScreenshotTimer = threading.Timer(duration, stopScreenshotTimer)
+    logger.debug("Starting the timer")
+    activeScreenshotTimer.start()
+    logger.debug("Finished startScreenshotTimer. activeScreenshotTimer is {}".format(type(activeScreenshotTimer)))
+
+def stopScreenshotTimer():
+    """Signal that the timer stopped"""
+    global activeScreenshotTimer, activeScreenshot
+    logger.info("Stopping screenshot timer...")
+    if activeScreenshotTimer:
+        activeScreenshotTimer.cancel()
+        activeScreenshotTimer = None
+    if activeScreenshot:
+        activeScreenshot.cancel()
+        activeScreenshot = None
+    if client:
+        client.publish(conf['mqttScreenshotCommand'], 'disable', 0, True)
+        # send the client back a "no signal" image
+        try:
+            with open(conf['no-signal'], 'rb') as file:
+                img = file.read()
+                client.publish(conf['mqttScreenshot'], img, 0, True)
+        except Exception as e:
+            logger.warning(e)
+            logger.warning(traceback.format_exc())
+
+
+def startScreenshotThread(interval):
+    """Start a thread to periodically grab a screenshot and send it via mqtt"""
+    global activeScreenshot
+    logger.debug("Getting screenshot image...")
+    if activeScreenshot:
+        activeScreenshot.cancel()
+    try:
+        image = computer.getScreenshot(oldDisplay, conf['screenshotHeight'])
+        if client:
+            client.publish(conf['mqttScreenshot'], image, 0, True)
+    except:
+        pass
+
+    #rerun the screeenshot in interval seconds
+    activeScreenshot = threading.Timer(interval, startScreenshotThread, [interval])
+    activeScreenshot.start()
 
 """ Initialize the MQTT object and connect to the server """
 parseConfig()
 #Load default time for the monitored users
 t={}
+activeScreenshot = None # thread for screenshots
+activeScreenshotTimer = None # thread for screenshot timer
 for user in conf['users']:
     t[user]=conf['users'][user]['defaultOfflineTime']
     logger.info("Loaded {} default minutes for {}".format(str(t[user]), user))
     # also, enable user (might have been disabled)
     computer.enableUser(user)
+    # set the default values in the local allowance file (if it doesn't exist)
+    computer.makeLocalAllowanceFile(user, str(t[user]))
+    # load the current locally saved values for this user (if the computer rebooted and he used up some
+    # allowance, it should continue from there.
+    timeleft = computer.getLocalAllowance(user)
+    if timeleft != t[user]:
+        t[user] = timeleft
+        logger.info("Loaded remaining allowance time ({}) from local file for user {}".format(timeleft, user))
+
 
 client = mqtt.Client()
 client.on_connect = on_connect
@@ -217,8 +287,16 @@ try:
 
             # Check if the current user still has time allowed. Active screensaver does not consume time
             if not screensaver:
-                t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
-                logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
+                if t[activeUser] >= 0:
+                    t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
+                    logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
+                else:
+                    logger.info("Time is negative. Nothing to decrease.")
+
+                #remember the ticked time locally as well
+                computer.setLocalAllowance(activeUser, t[activeUser])
+
+
                 if t[activeUser] == 10:
                     # 10 minutes left
                     computer.notify(10, display)
@@ -251,6 +329,7 @@ try:
 
         except Exception as e:
             logger.warning(e)
+            logger.warning(traceback.format_exc())
             #invalidate the mqtt topics
             if client:
                 client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)

@@ -2,6 +2,7 @@ import subprocess, os
 import re
 #sudo apt-get install python3-notify2
 import notify2
+import traceback
 import time
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
@@ -31,6 +32,9 @@ logging_config = dict(
 
 dictConfig(logging_config)
 logger = logging.getLogger(__name__)
+
+LOCAL_ALLOWANCE_PATH='/usr/local/share/mqttNanny/'
+
 def externalNotify(program, message):
     """Send a message out via telegram or external script"""
     subprocess.run([program, message], stdout=subprocess.PIPE, universal_newlines=True)
@@ -90,20 +94,23 @@ def getActiveWindowName(display):
 def notify(remainingTime, currentDisplay):
     """Show a notification and audio of remaining time"""
     os.environ['DISPLAY'] = currentDisplay
-    notify2.init("Nanny")
     msg = None
-    if remainingTime:
+    if remainingTime > 0:
         msg = "{} minutes left".format(str(remainingTime))
     else:
         msg = "Time's up!"
-    n = notify2.Notification(msg, msg, "notification-power-disconnected" )
-    n.set_timeout(5000)
-    n.show()
-    #have it speak via espeak
+
     try:
-      subprocess.run('echo "'+ msg +'" | espeak', shell=True, check=False, timeout=5)
-    except:
-        pass
+        notify2.init("Nanny")
+        n = notify2.Notification(msg, msg, "notification-power-disconnected" )
+        n.set_timeout(5000)
+        n.show()
+        #have it speak via espeak
+        subprocess.run('echo "'+ msg +'" | espeak', shell=True, check=False, timeout=5)
+    except Exception as e:
+        logger.warning(e)
+        logger.warning(traceback.format_exc())
+
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
@@ -129,6 +136,36 @@ def getScreenshot(display, yres=0):
     logger.debug(command)
     result = subprocess.run(command, shell=True, check=False, stdout=subprocess.PIPE)
     return result.stdout
+
+def makeLocalAllowanceFile(user, value, force=False):
+    """Create a local file where to store the default/remaining allowance for the specific user for today"""
+    if not os.path.exists(LOCAL_ALLOWANCE_PATH+user):
+        logger.debug("Creating {}".format(LOCAL_ALLOWANCE_PATH+user))
+        os.makedirs(LOCAL_ALLOWANCE_PATH+user,0o600, True)
+    today = time.strftime("%Y-%m-%d")
+    filename = LOCAL_ALLOWANCE_PATH+user+"/"+today
+    if not os.path.exists(filename) or force:
+        logger.debug("Writing {} to  {}".format(str(value), filename))
+        f= open(filename,"w+")
+        f.write(str(value))
+        f.close()
+
+def getLocalAllowance(user):
+    """Read back the user's current allowance"""
+    toReturn=0
+    today = time.strftime("%Y-%m-%d")
+    filename = LOCAL_ALLOWANCE_PATH + user + "/" + today
+    try:
+        f= open(filename,"r")
+        value = f.readline()
+        toReturn = int(value)
+    except:
+        logger.warning("Unable to read from local allowance file. Returning 0...")
+    return toReturn
+
+def setLocalAllowance(user, value):
+    """Force write the allowance to file (periodic updates)"""
+    makeLocalAllowanceFile(user, value, True)
 
 if __name__ == '__main__':
     """Do a bit of unit testing"""

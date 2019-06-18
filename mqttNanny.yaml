@@ -6,8 +6,12 @@ baseTopic: 'ha/pc/'
 mqttTimeTopicSuffix: 'timeRemaining'
 mqttScreenshot: 'ha/pc/screenshot'
 mqttScreenshotCommand: 'ha/pc/screenshot/command'
+mqttScreenshotDuration: 60
+mqttScreenshotInterval: 5
+screenshotHeight: 720
 checkInterval: 60
 externalNotify: False
+no-signal: '/usr/local/share/mqttNanny/no-signal.jpg'
 users:
   username1:
     defaultOfflineTime: 60
