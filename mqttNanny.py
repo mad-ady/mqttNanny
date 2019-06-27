@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import linuxControl as computer
+
 import paho.mqtt.client as mqtt
 import yaml
 import os
@@ -7,6 +7,8 @@ import traceback
 import threading
 import time
 import logging
+import sys
+import platform
 from logging.config import dictConfig
 
 logging_config = dict(
@@ -61,6 +63,14 @@ logger = logging.getLogger(__name__)
 #Tips:
 #/etc/mqttNanny.yaml should be readable only by root, in order not to expose your MQTT credentials to internal attackers
 
+
+""" Dynamically load the corect backend module for the running platform """
+if platform.system() == "Linux":
+    import linuxControl as computer
+else:
+    logger.error("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
+    sys.exit(2)
+
 """ Parse and load the configuration file to get MQTT credentials """
 
 conf = {}
@@ -106,7 +116,11 @@ def on_message(client, userdata, msg):
         if msg.payload.decode() == 'enable':
             # start a thread that will periodically post back screenshots for a set interval of time. At the end, it disables itself
             logger.debug("Enabling screenshots")
-            startScreenshotTimer(int(conf['mqttScreenshotDuration']))
+            screenshotTimeout = int(conf['mqttScreenshotDuration'])
+            if screenshotTimeout == 0:
+                #don't turn off screenshots automatically
+                screenshotTimeout = sys.maxsize
+            startScreenshotTimer(screenshotTimeout)
             startScreenshotThread(int(conf['mqttScreenshotInterval']))
         if msg.payload.decode() == 'disable':
             # kill the screenshot thread if it exists
