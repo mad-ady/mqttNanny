@@ -233,6 +233,7 @@ oldDisplay=None
 oldActiveUser=None
 oldScreensaver=None
 oldApplication=None
+failedScreensaver=0
 
 try:
     client.loop_start()
@@ -337,7 +338,20 @@ try:
                     time.sleep(4)
                     # lock screensaver and disable user
                     computer.disableUser(activeUser)
-                    computer.lockScreensaver(display)
+                    returncode = computer.lockScreensaver(display)
+                    if returncode != 0:
+                        #failed to lock the screensaver for some reason
+                        logger.warning("Failed to lock the screensaver - error code {}".format(returncode))
+                        failedScreensaver+=1
+                        if failedScreensaver > 5:
+                            logger.info("Enforcing the limit by shutting down, since screensaver didn't work")
+                            if conf['externalNotify']:
+                                computer.externalNotify(conf['externalNotify'],
+                                                        "Shutting down the computer since screensaver wouldn't lock")
+                            computer.shutdown()
+                    else:
+                        failedScreensaver = 0
+
                 if client:
                     client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
 

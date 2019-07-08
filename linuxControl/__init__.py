@@ -83,7 +83,11 @@ def hasRootAccessToDisplay(display):
 def lockScreensaver(display):
     """Turn on the screensaver"""
     os.environ['DISPLAY'] = display
-    subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False)
+    return subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False).returncode
+
+def shutdown():
+    """Turn off the computer"""
+    return subprocess.run('poweroff', shell=True, universal_newlines=True, check=False).returncode
 
 def getActiveWindowName(display):
     """Get the name/titlebar of the active window"""
