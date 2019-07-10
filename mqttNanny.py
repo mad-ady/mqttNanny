@@ -2,7 +2,6 @@
 
 import paho.mqtt.client as mqtt
 import yaml
-import os
 import traceback
 import threading
 import time
@@ -10,6 +9,14 @@ import logging
 import sys
 import platform
 from logging.config import dictConfig
+
+""" Dynamically load the corect backend module for the running platform """
+if platform.system() == "Linux":
+    import linuxControl as computer
+else:
+    print("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
+    sys.exit(2)
+
 
 logging_config = dict(
     version = 1,
@@ -64,12 +71,6 @@ logger = logging.getLogger(__name__)
 #/etc/mqttNanny.yaml should be readable only by root, in order not to expose your MQTT credentials to internal attackers
 
 
-""" Dynamically load the corect backend module for the running platform """
-if platform.system() == "Linux":
-    import linuxControl as computer
-else:
-    logger.error("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
-    sys.exit(2)
 
 """ Parse and load the configuration file to get MQTT credentials """
 
