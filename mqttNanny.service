@@ -3,7 +3,7 @@ Description=mqttNanny
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/mqttNanny.py
+ExecStart=/usr/local/share/mqttNanny.py
 Type=simple
 Restart=always
 RestartSec=5
