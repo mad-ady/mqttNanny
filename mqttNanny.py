@@ -302,7 +302,7 @@ try:
                                             "Application change: {}".format(application))
 
             # Check if the current user still has time allowed. Active screensaver does not consume time
-            if not screensaver:
+            if activeUser in t and not screensaver:
                 if t[activeUser] >= 0:
                     t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
                     logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
