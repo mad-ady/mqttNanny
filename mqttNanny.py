@@ -128,6 +128,10 @@ def on_message(client, userdata, msg):
             logger.debug("Disabling screenshots")
             if activeScreenshotTimer:
                 stopScreenshotTimer()
+    if msg.topic == conf['baseTopic']+"heartbeat":
+        if msg.payload.decode() == 'ping':
+            # reply with a pong
+            client.publish(conf['baseTopic'] + 'heartbeat', "pong", 0, True)
 
     if msg.topic in timeTopics.keys():
         logger.debug("Processing {} for user {}".format(msg.topic, timeTopics[msg.topic]))
