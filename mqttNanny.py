@@ -8,6 +8,7 @@ import time
 import logging
 import sys
 import platform
+import re
 from logging.config import dictConfig
 
 """ Dynamically load the corect backend module for the running platform """
@@ -308,12 +309,14 @@ try:
             # some applications do not consume time while in the foreground
             whitelist = False
             if 'whitelist' in conf:
-                # full match of the application name
-                if application in conf['whitelist']:
-                    whitelist = True
+                # partial match of the application name
+                for appString in conf['whitelist']:
+                    if re.search(appString, application):
+                        logger.debug("Matched whitelist string "+appString+ " with application "+application)
+                        whitelist = True
 
             # Check if the current user still has time allowed. Active screensaver does not consume time
-            if activeUser in t and (not screensaver and not whitelist):                       
+            if activeUser in t and not (screensaver or whitelist):                       
                 if t[activeUser] >= 0:
                     t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
                     logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))

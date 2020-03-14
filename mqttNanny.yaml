@@ -13,7 +13,7 @@ checkInterval: 60
 externalNotify: False
 no-signal: '/usr/local/share/mqttNanny/no-signal.jpg'
 whitelist:
-  - Clementine
+  - Amarok
 users:
   username1:
     defaultOfflineTime: 60
