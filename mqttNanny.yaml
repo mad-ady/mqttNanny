@@ -12,6 +12,8 @@ screenshotHeight: 720
 checkInterval: 60
 externalNotify: False
 no-signal: '/usr/local/share/mqttNanny/no-signal.jpg'
+whitelist:
+  - Clementine
 users:
   username1:
     defaultOfflineTime: 60

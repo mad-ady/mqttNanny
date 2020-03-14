@@ -305,8 +305,15 @@ try:
                     computer.externalNotify(conf['externalNotify'],
                                             "Application change: {}".format(application))
 
+            # some applications do not consume time while in the foreground
+            whitelist = False
+            if 'whitelist' in conf:
+                # full match of the application name
+                if application in conf['whitelist']:
+                    whitelist = True
+
             # Check if the current user still has time allowed. Active screensaver does not consume time
-            if activeUser in t and not screensaver:
+            if activeUser in t and (not screensaver and not whitelist):                       
                 if t[activeUser] >= 0:
                     t[activeUser] = int(t[activeUser] - conf['checkInterval']/60.0)
                     logger.info("Tick down time for {}. Time left: {} min".format(activeUser, t[activeUser]))
