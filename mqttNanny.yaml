@@ -12,6 +12,7 @@ screenshotHeight: 720
 checkInterval: 60
 externalNotify: False
 no-signal: '/usr/local/share/mqttNanny/no-signal.jpg'
+graceTime: 5
 whitelist:
   - Amarok
 users:

@@ -240,6 +240,7 @@ oldActiveUser=None
 oldScreensaver=None
 oldApplication=None
 failedScreensaver=0
+startup=True
 
 try:
     client.loop_start()
@@ -252,6 +253,7 @@ if conf['externalNotify']:
     if(running_local):
         timekeeping="local"
     computer.externalNotify(conf['externalNotify'], "Starting mqttNanny main loop. Timekeeping is {}".format(timekeeping))
+
 
 try:
     while True:
@@ -323,6 +325,11 @@ try:
                 else:
                     logger.info("Time is negative. Nothing to decrease.")
 
+                # we are starting up. If set and if user's time is lower than the limit, give some grace time before enforcing the rules
+                if startup and 'graceTime' in conf and conf['graceTime'] > int(t[activeUser]):
+                    t[activeUser] = conf['graceTime']
+                    logger.info("Added grace time for {}. Time left: {} min".format(activeUser, t[activeUser]))
+                
                 #remember the ticked time locally as well
                 computer.setLocalAllowance(activeUser, t[activeUser])
 
@@ -369,6 +376,8 @@ try:
 
                 if client:
                     client.publish(conf['baseTopic']+activeUser+'/'+conf['mqttTimeTopicSuffix'], t[activeUser], 0, True)
+            
+            startup = False
 
         except Exception as e:
             logger.warning(e)
