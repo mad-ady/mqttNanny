@@ -9,6 +9,7 @@ import logging
 import sys
 import platform
 import re
+import signal
 from logging.config import dictConfig
 
 """ Dynamically load the corect backend module for the running platform """
@@ -199,6 +200,19 @@ def startScreenshotThread(interval):
     activeScreenshot = threading.Timer(interval, startScreenshotThread, [interval])
     activeScreenshot.start()
 
+def exit_gracefully():
+    """Try to clear the MQTT topics on exit"""
+    global client, conf, computer
+
+    if conf['externalNotify'] and computer:
+        computer.externalNotify(conf['externalNotify'], "mqttNanny is stopping by term/kill signal")
+    #invalidate the mqtt topics
+    if client:
+        client.publish(conf['baseTopic']+'activeUser', 'None', 0, True)
+        client.publish(conf['baseTopic']+'display', 'None', 0, True)
+        client.publish(conf['baseTopic']+'screensaver', False, 0, True)
+        client.publish(conf['baseTopic']+'application', 'None', 0, True)
+
 """ Initialize the MQTT object and connect to the server """
 parseConfig()
 #Load default time for the monitored users
@@ -219,6 +233,10 @@ for user in conf['users']:
         t[user] = timeleft
         logger.info("Loaded remaining allowance time ({}) from local file for user {}".format(timeleft, user))
 
+
+# allow handling of kill/term signals
+signal.signal(signal.SIGINT, exit_gracefully)
+signal.signal(signal.SIGTERM, exit_gracefully)
 
 client = mqtt.Client()
 client.on_connect = on_connect
