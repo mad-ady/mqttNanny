@@ -103,6 +103,10 @@ def on_connect(client, userdata, flags, rc):
     (result, mid) = client.subscribe(conf['mqttScreenshotCommand'])
     logger.info("Got subscription result for " + conf['mqttScreenshotCommand'] + ":" + str(result))
 
+    #subscribe to the message topic
+    (result, mid) = client.subscribe(conf['baseTopic']+"message")
+    logger.info("Got subscription result for " + conf['baseTopic'] +"message" + ":" + str(result))
+
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     logger.debug("Received command:" + msg.topic + " " + str(msg.payload))
