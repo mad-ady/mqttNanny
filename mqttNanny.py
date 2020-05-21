@@ -134,6 +134,13 @@ def on_message(client, userdata, msg):
         if msg.payload.decode() == 'ping':
             # reply with a pong
             client.publish(conf['baseTopic'] + 'heartbeat', "pong", 0, True)
+    if msg.topic == conf['baseTopic']+"message":
+        if msg.payload.decode() != None and msg.payload.decode() != '':
+            # display the message on-screen
+            if oldDisplay:
+                computer.notify(msg.payload.decode(), oldDisplay)
+            # reset the message
+            client.publish(conf['baseTopic'] + 'message', "", 0, True)
 
     if msg.topic in timeTopics.keys():
         logger.debug("Processing {} for user {}".format(msg.topic, timeTopics[msg.topic]))
@@ -354,24 +361,24 @@ try:
 
                 if t[activeUser] == 10:
                     # 10 minutes left
-                    computer.notify(10, display)
+                    computer.notifyTime(10, display)
                     if conf['externalNotify']:
                         computer.externalNotify(conf['externalNotify'],
                                                 "{} minutes left for {}".format(t[activeUser], activeUser))
                 if t[activeUser] == 5:
                     # 5 minutes left
-                    computer.notify(5, display)
+                    computer.notifyTime(5, display)
                     if conf['externalNotify']:
                         computer.externalNotify(conf['externalNotify'],
                                                 "{} minutes left for {}".format(t[activeUser], activeUser))
                 if t[activeUser] == 1:
                     # final warning
-                    computer.notify(1, display)
+                    computer.notifyTime(1, display)
                     if conf['externalNotify']:
                         computer.externalNotify(conf['externalNotify'],
                                                 "{} minutes left for {}".format(t[activeUser], activeUser))
                 if t[activeUser] <= 0:
-                    computer.notify(0, display)
+                    computer.notifyTime(0, display)
                     if conf['externalNotify']:
                         computer.externalNotify(conf['externalNotify'],
                                                 "{} minutes left for {}".format(t[activeUser], activeUser))

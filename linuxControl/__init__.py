@@ -95,7 +95,21 @@ def getActiveWindowName(display):
     result = subprocess.run('xdotool getwindowfocus getwindowname', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
     return result.stdout.rstrip()
 
-def notify(remainingTime, currentDisplay):
+def notify(text, currentDisplay):
+    """Show a notification"""
+    os.environ['DISPLAY'] = currentDisplay
+    msg = text
+
+    try:
+        notify2.init("Nanny")
+        n = notify2.Notification(msg, msg, "notification-power-disconnected" )
+        n.set_timeout(5000)
+        n.show()
+    except Exception as e:
+        logger.warning(e)
+        logger.warning(traceback.format_exc())
+
+def notifyTime(remainingTime, currentDisplay):
     """Show a notification and audio of remaining time"""
     os.environ['DISPLAY'] = currentDisplay
     msg = None
@@ -114,7 +128,6 @@ def notify(remainingTime, currentDisplay):
     except Exception as e:
         logger.warning(e)
         logger.warning(traceback.format_exc())
-
 
 def isScreensaverOn(display):
     """Is the screensaver active?"""
