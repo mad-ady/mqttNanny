@@ -56,6 +56,8 @@ logger = logging.getLogger(__name__)
 # * notify2: sudo apt-get install python3-notify2
 #sudo apt-get install espeak
 #sudo apt-get install xscreensaver
+# -- or --
+#sudo apt-get install mate-screensaver
 #sudo apt-get install xdotool
 #sudo apt-get install imagemagick
 
@@ -82,7 +84,10 @@ def parseConfig():
     global conf
     with open("/etc/mqttNanny.yaml", 'r') as stream:
         try:
-            conf = yaml.load(stream)
+            conf = yaml.load(stream, Loader=yaml.SafeLoader)
+            #set a reasonable default for screensaver, just in case
+            if not 'screensaver' in conf:
+                conf['screensaver'] = 'xscreensaver'
         except yaml.YAMLError as exc:
             logger.error(exc)
             logger.error("Unable to parse configuration file /etc/mqttNanny.yaml")
@@ -317,7 +322,7 @@ try:
                 computer.giveRootAccessToDisplay(activeUser, display)
 
             #is screensaver active?
-            screensaver = computer.isScreensaverOn(display)
+            screensaver = computer.isScreensaverOn(display, conf['screensaver'])
             if screensaver != oldScreensaver:
                 oldScreensaver = screensaver
                 if client:
@@ -389,7 +394,7 @@ try:
                     time.sleep(4)
                     # lock screensaver and disable user
                     computer.disableUser(activeUser)
-                    returncode = computer.lockScreensaver(display)
+                    returncode = computer.lockScreensaver(display, conf['screensaver'])
                     if returncode != 0:
                         #failed to lock the screensaver for some reason
                         logger.warning("Failed to lock the screensaver - error code {}".format(returncode))

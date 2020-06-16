@@ -80,10 +80,16 @@ def hasRootAccessToDisplay(display):
     else:
         return True
 
-def lockScreensaver(display):
+def lockScreensaver(display, screensaver="xscreensaver"):
     """Turn on the screensaver"""
     os.environ['DISPLAY'] = display
-    return subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False).returncode
+    if screensaver == 'xscreensaver':
+        return subprocess.run('xscreensaver-command -lock', shell=True, universal_newlines=True, check=False).returncode
+    if screensaver == 'mate-screensaver':
+        return subprocess.run('mate-screensaver-command -l', shell=True, universal_newlines=True, check=False).returncode
+    
+    # in case the screensaver is unsupported, return -1
+    return -1
 
 def shutdown():
     """Turn off the computer"""
@@ -129,19 +135,34 @@ def notifyTime(remainingTime, currentDisplay):
         logger.warning(e)
         logger.warning(traceback.format_exc())
 
-def isScreensaverOn(display):
+def isScreensaverOn(display, scrensaver="xscreensaver"):
     """Is the screensaver active?"""
     os.environ['DISPLAY'] = display
-    result = subprocess.run('xscreensaver-command -time', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
 
-    for line in iter(result.stdout.splitlines()):
-        logger.debug(line)
-        match = re.search(r'screen (blanked|locked) since', line)
-        if match:
-            return True
-        else:
-            return False
+    if screensaver == 'xscreensaver':
+        result = subprocess.run('xscreensaver-command -time', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
 
+        for line in iter(result.stdout.splitlines()):
+            logger.debug(line)
+            match = re.search(r'screen (blanked|locked) since', line)
+            if match:
+                return True
+            else:
+                return False
+    if screensaver == "mate-screensaver":
+        result = subprocess.run('mate-screensaver-command -t', shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE)
+
+        for line in iter(result.stdout.splitlines()):
+            logger.debug(line)
+            match = re.search(r'The screensaver has been active for', line)
+            if match:
+                return True
+            else:
+                return False
+
+    # if it's a non-supported screensaver, always return false
+    return False
+    
 def getScreenshot(display, yres=0):
     """Grab a screenshot of the active display and convert it to jpeg.
         Returns the binary jpeg data as bytes."""

@@ -10,6 +10,7 @@ mqttScreenshotDuration: 60
 mqttScreenshotInterval: 5
 screenshotHeight: 720
 checkInterval: 60
+screensaver: mate-screensaver
 externalNotify: False
 no-signal: '/usr/local/share/mqttNanny/no-signal.jpg'
 graceTime: 5
