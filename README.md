@@ -29,7 +29,7 @@ You will need to install some dependencies as well:
 $ sudo apt-get install python3-pip python3-yaml python3-notify2 espeak xscreensaver xdotool imagemagick
 $ sudo pip3 install paho-mqtt
 ```
-Note that currently only Linux systems are supported, but the code is written so that it could be extended for other OSes as well (pull requests are welcome). The linux system needs to be running Xorg (Xwayland probably needs many changes) and the screensaver program needs to be Xscreensaver (not mate-screensaver, xfce-screensaver, etc). Support for other screensavers could be added in the future though (pull request welcome). The code was tested on a Odroid H2 (x86_64), Odroid XU4 (armhf) and an Odroid N2 (arm64). To migrate from mate-screensaver to xscreensaver you can do the following:
+Note that currently only Linux systems are supported, but the code is written so that it could be extended for other OSes as well (pull requests are welcome). The linux system needs to be running Xorg (Xwayland probably needs many changes) and the screensaver program needs to be Xscreensaver or mate-screensaver. Support for other screensavers could be added in the future though (pull request welcome). The code was tested on a Odroid H2 (x86_64), Odroid XU4 (armhf) and an Odroid N2 (arm64). To migrate from mate-screensaver to xscreensaver you can do the following:
 ```
 $ sudo apt-get purge mate-screensaver
 $ xscreensaver-demo
@@ -54,6 +54,9 @@ mqttScreenshotCommand - the topic where you can request screenshots or not. This
 mqttScreenshotDuration - how long until the screenshot feature turns itself off. If you want it always on, set it to 0
 mqttScreenshotInterval - how often (in seconds) should it grab screenshots
 screenshotHeight - resize the screenshot to this height (keeping aspect ratio), for efficiency reasons
+screensaver - mate-screensaver or xscreensaver
+graceTime - on startup, give graceTime minutes by default, if the current allowence is below this limit
+whitelist - list of window title names for foreground apps that you don't want to consume the kid's time (e.g. Zoom, etc)
 checkInterval - how often should the script's internal clock tick. 60 seconds means that allowance is checked every minute. You also get application changes every minute.
 externalNotify - should either be False or point to a program/script that takes a string as argument and sends the message to you. For instance, I set it up to /usr/local/bin/telegram-send and get notified of events through a telegram bot.
 no-signal - should point to an image file that is displayed when screenshots are turned off
