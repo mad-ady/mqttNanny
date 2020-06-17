@@ -135,7 +135,7 @@ def notifyTime(remainingTime, currentDisplay):
         logger.warning(e)
         logger.warning(traceback.format_exc())
 
-def isScreensaverOn(display, scrensaver="xscreensaver"):
+def isScreensaverOn(display, screensaver="xscreensaver"):
     """Is the screensaver active?"""
     os.environ['DISPLAY'] = display
 
