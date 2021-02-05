@@ -13,8 +13,13 @@ import signal
 from logging.config import dictConfig
 
 """ Dynamically load the corect backend module for the running platform """
+logfile = "/var/log/mqttNanny.log"
+localPath = os.path.dirname(os.path.realpath(__file__))
 if platform.system() == "Linux":
     import linuxControl as computer
+if platform.system() == "Windows":
+    import windowsControl as computer
+    logfile = localPath+"\\mqttNanny.log"
 else:
     print("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
     sys.exit(2)
@@ -34,7 +39,7 @@ logging_config = dict(
         'f': {
               'class': 'logging.handlers.RotatingFileHandler',
               'formatter': 'f',
-              'filename': '/var/log/mqttNanny.log',
+              'filename': logfile,
               'maxBytes': 1000000,
               'backupCount': 4
         }
@@ -82,7 +87,10 @@ conf = {}
 
 def parseConfig():
     global conf
-    with open("/etc/mqttNanny.yaml", 'r') as stream:
+    conffile = "/etc/mqttNanny.yaml"
+    if platform.system() == "Windows":
+        conffile = localPath+"\\mqttNanny.yaml"
+    with open(conffile, 'r') as stream:
         try:
             conf = yaml.load(stream, Loader=yaml.SafeLoader)
             #set a reasonable default for screensaver, just in case
@@ -90,7 +98,7 @@ def parseConfig():
                 conf['screensaver'] = 'xscreensaver'
         except yaml.YAMLError as exc:
             logger.error(exc)
-            logger.error("Unable to parse configuration file /etc/mqttNanny.yaml")
+            logger.error("Unable to parse configuration file "+conffile)
             sys.exit(1)
 
 # The callback for when the client receives a CONNACK response from the server.
