@@ -4,8 +4,10 @@ import traceback
 import time
 import logging
 from logging.config import dictConfig
+import wmi
 
 localPath = os.path.dirname(os.path.realpath(__file__))
+w =  wmi.WMI()
 
 
 logging_config = dict(
@@ -67,7 +69,7 @@ def getUserForDisplay(tty):
     user = None
     display = None
     for line in iter(result.stdout.splitlines()):
-        logger.debug(line)
+        #logger.debug(line)
         #we're only looking for the active tty (e.g. console)
         match = re.match(r'^(\s|\>)(......................)('+tty+')\s+', line)
         if match:
@@ -126,88 +128,81 @@ def shutdown():
 
 def getActiveWindowName(display):
     """Get the name/titlebar of the active window"""
-    # first, get the active user on the display
-    (user, display) = getUserForDisplay(display)
-    
-    # calls the external activeWindowName.ps1 script to do the dirty work
-    result = subprocess.run(['powershell.exe', "-Command", localPath+"\\activeWindowName.ps1"], shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.info("Running command {}".format(result.args))
-    #powershell.exe -Command .\activeWindowName.ps1
-    #
-    #ProcessName     UserName                AppTitle
-    #-----------     --------                --------
-    #WindowsTerminal DESKTOP-KHG5C3F\user1   Administrator: Windows PowerShell    
-    
-    
-    processNameLength = 0
-    userNameLength = 0
-    dashesMatched = False
-    activeWindows = []
 
-    for line in iter(result.stdout.splitlines()):
-        #ignore blank lines
-        if re.match('^\s*$', line):
-            continue
-        logger.debug(line)
-        # look for -----------     --------                --------
-        matchDashes = re.match(r'^([-]+\s+)([-]+\s+)([-]+\s*)', line)
-        if matchDashes:
-            # we need to count the length of the columns so that we can more easily parse it
-            processNameLength = len(matchDashes.group(1))
-            userNameLength = len(matchDashes.group(2))
-            logger.debug("processNameLength = {}, userNameLength = {}".format(processNameLength, userNameLength))
-            dashesMatched = True
-            continue
-        
-        if dashesMatched:
-            # we'll split the line based on length
-            # some lines may not have all the data, skip them
-            if len(line) >= processNameLength + userNameLength:
-                processName = line[0:processNameLength].rstrip(" ")
-                userName = line[processNameLength:processNameLength+userNameLength].rstrip(" ")
-                title = line[processNameLength+userNameLength:].rstrip(" ") #till the string end
+    # we can't get it via powershell as a system process, so we need to get it from a file 
+    # that gets written to through a scheduled task (hopefully)
 
-                # from the user cut out the domain (computer name)
-                try:
-                    userName = userName.split("\\")[1]
-                    # transform the username to lowercase
-                    userName = userName.lower()
-                    logger.debug("Extracted processName: {}, username: {}, title: {}".format(processName, userName, title))
+    # get user's TEMP path
+    tempPath = getCurrentUserTempPath()
 
-                    # make sure the active window belongs to the active user (may be redundant? I don't know)
-                    if userName == user:
-                        activeWindows.append(processName + ": " + title)
-                except:
-                    logger.warning("Unable to extract username")
+    if tempPath:
+        windowOutput = ''
+        try:
+            with open(tempPath+"mqttNanny-activeWindow.txt", encoding="utf-16") as file:
+                windowOutput = file.read()
+        except IOError as e:
+            logger.error("Error while reading active window name: {}".format(str(e)))
+            return ''
+
+        # File contents looks like this:
+        #
+        #ProcessName     AppTitle          
+        #-----------     --------          
+        #WindowsTerminal Windows PowerShell    
+    
+        processNameLength = 0
+        dashesMatched = False
+        activeWindows = []
+
+        for line in iter(windowOutput.splitlines()):
+            #ignore blank lines
+            if re.match('^\s*$', line):
+                continue
+            logger.debug(line)
+            # look for -----------     --------
+            matchDashes = re.match(r'^([-]+\s+)([-]+\s*)', line, re.UNICODE)
+            if matchDashes:
+                # we need to count the length of the columns so that we can more easily parse it
+                processNameLength = len(matchDashes.group(1))
+                logger.debug("processNameLength = {}".format(processNameLength))
+                dashesMatched = True
+                continue
             
-        
-    for line in iter(result.stderr.splitlines()):
-        logger.warning(line)
-    
-    if len(activeWindows) == 1:
-        #this is normal, one active window
-        return activeWindows[0]
-    elif len(activeWindows) == 0:
-        return "No window"
-    else:
-        # more than one active window is a problem - couldn't get active windows...
-        logger.warning("Found "+str(len(activeWindows))+" active windows. This is not ok.")
-        return "Error - couldn't get active window"
+            if dashesMatched:
+                # we'll split the line based on length
+                # some lines may not have all the data, skip them
+                if len(line) >= processNameLength:
+                    processName = line[0:processNameLength].rstrip(" ")
+                    title = line[processNameLength:].rstrip(" ")
+                    
+                    activeWindows.append(processName + ": " + title)
+            
+        if len(activeWindows) == 1:
+            #this is normal, one active window
+            return activeWindows[0]
+        elif len(activeWindows) == 0:
+            return "No window"
+        else:
+            # more than one active window is a problem - couldn't get active windows...
+            logger.warning("Found "+str(len(activeWindows))+" active windows. This is not ok.")
+            return "Error - couldn't get active window"
 
 def notify(text, currentDisplay):
     """Show a notification"""
     msg = text
-    user = ""
-    try:
-        (user, display) = getUserForDisplay(currentDisplay)
-    except:
-        pass
-    result = subprocess.run(['powershell.exe', "-file", localPath+"\\notification.ps1", "Attention, "+user, msg], shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.info("Running command {}".format(result.args))
-    for line in iter(result.stdout.splitlines()):
-        logger.debug(line)
-    for line in iter(result.stderr.splitlines()):
-        logger.warning(line)
+    # since we can't push a notification as a system process, we'll do it from the user space
+
+    # get user's TEMP path
+    tempPath = getCurrentUserTempPath()
+
+    if tempPath:
+        try:
+            with open(tempPath+"mqttNanny-notify.txt", 'w', encoding="utf-16") as file:
+                file.write("Attention\n")
+                file.write(msg)
+
+        except IOError as e:
+            logger.error("Error while writing notification file: {}".format(str(e)))
 
 def notifyTime(remainingTime, currentDisplay):
     """Show a notification of remaining time"""
@@ -235,21 +230,51 @@ def isScreensaverOn(display, screensaver="xscreensaver"):
 def getScreenshot(display, yres=0):
     """Grab a screenshot of the active display and convert it to jpeg.
         Returns the binary jpeg data as bytes."""
-    screenshot = subprocess.run(["powershell.exe", "-Command", localPath+"\\screenshot.ps1", localPath+"\\screenshot.jpg"], shell=True, universal_newlines=True, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logger.debug("Running command {}".format(screenshot.args))
-    for line in iter(screenshot.stdout.splitlines()):
-        logger.debug(line)
-    for line in iter(screenshot.stderr.splitlines()):
-        logger.warning(line)
 
-    # now, try to read the screenshot and return its bytes
-    try:
-        with open(localPath+"\\screenshot.jpg", 'rb') as file:
-            return file.read()
-    except Exception as e:
-        logger.error("Error while reading screenshot: "+str(e))
+    # get user's TEMP path
+    tempPath = getCurrentUserTempPath()
+
+    if tempPath:
+        # create the flag to request a screenshot
+        try:
+            flag = open(tempPath+"mqttNanny-wantScreenshot.txt", "w")
+            flag.close()
+        except IOError as e:
+            logger.error("Unable to touch {}: {}".format(tempPath+"mqttNanny-wantScreenshot.txt", str(e)))
+
+        # since we can't grab a screenshot directly, we're looking for one captured by scheduled task
+        try:
+            with open(tempPath+"mqttNanny-screenshot.jpg", 'rb') as file:
+                return file.read()
+        except IOError as e:
+            logger.error("Error while reading screenshot: {}".format(str(e)))
+            return ''
+    else:
         return ''
 
+def getCurrentUserTempPath():
+    """Get the %TEMP% path for the current user logged on console"""
+
+    (user, display) = getUserForDisplay('console')
+    if user:
+        # ask windows via WMI to get the user's SID and homedir name
+        #
+        #$user = Get-WmiObject -Namespace root/cimv2 -Class win32_useraccount -Filter "LocalAccount=True AND Name='$username'"
+        #$userprofile = Get-WmiObject -Namespace root/cimv2 -Class win32_userprofile -Filter "SID='$($user.sid)'"
+        logging.debug("Looking for user account {}".format(user))
+        accountList = w.Win32_UserAccount(Name=user)
+        #we'll assume there is only one account by that name. Makes sense, right?
+        if len(accountList):
+            logging.debug("Found user with SID {}".format(accountList[0].SID))
+            profileList = w.win32_userprofile(SID=accountList[0].SID)
+            if(len(profileList)):
+                homedir = profileList[0].LocalPath
+                # we will append AppData\Local\Temp to the path
+                return homedir + "\\AppData\\Local\\Temp\\"
+    else:
+        #we couldn't find a user logged in. Return None
+        logger.warning("Couldn't find a user logged in")
+        return None
 
 def makeLocalAllowanceFile(user, value, force=False):
     """Create a local file where to store the default/remaining allowance for the specific user for today"""
@@ -285,7 +310,7 @@ def setLocalAllowance(user, value):
 
 if __name__ == '__main__':
     """Do a bit of unit testing"""
-    print("Sleeping 15s...")
+    print("Sleeping 25s...")
     time.sleep(25)
     currentTTY = getCurrentDisplay()
     print("Script directory is "+localPath)
@@ -293,9 +318,12 @@ if __name__ == '__main__':
     try:
         (currentUser, currentDisplay) = getUserForDisplay(currentTTY)
         print("Current user is {}\n".format(currentUser))
+        print("Current user TEMP path is {}\n".format(getCurrentUserTempPath()))
+        #exit()
         print("Current application name is {}\n".format(getActiveWindowName(currentDisplay)))
         #print("lockScreensaver({})...\n".format(currentDisplay))
         #lockScreensaver(currentDisplay)
+        #exit()
         time.sleep(5)
         print("isScreensaverOn({})? {}\n".format(currentDisplay, isScreensaverOn(currentDisplay)))
         notifyTime(5, currentDisplay)
@@ -308,8 +336,8 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(e)
-    print("Disabling user...\n")
-    disableUser('user de test')
+    #print("Disabling user...\n")
+    #disableUser('user de test')
     #enableUser('user de test')
 
 

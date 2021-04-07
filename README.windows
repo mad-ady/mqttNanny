@@ -25,13 +25,16 @@ PS C:\WINDOWS\system32> query user
 ```
  Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope LocalMachine
 ```
+ - In order to get notifications pop up even when playing games/full screen content, you need to explicitly enable them in Windows Settings:
+  https://www.askvg.com/windows-10-fix-notifications-not-showing-while-playing-games-or-full-screen-videos/
+  WIN + I -> Focus Assist -> Automatic Rules -> Disable "While playing a game/When I'm using an app in full screen mode"
 
 == Installation ==
 Install python3 (e.g. via `choco install python3 pip`)
 
 From an Administrator PowerShell run:
 ```
-pip install paho-mqtt pyYaml
+pip install paho-mqtt pyYaml wmi
 ```
 
 == Caveats ==
