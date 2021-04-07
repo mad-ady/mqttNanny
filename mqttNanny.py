@@ -10,6 +10,7 @@ import sys
 import platform
 import re
 import signal
+import os
 from logging.config import dictConfig
 
 """ Dynamically load the corect backend module for the running platform """
