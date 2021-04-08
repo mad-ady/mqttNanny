@@ -37,5 +37,27 @@ From an Administrator PowerShell run:
 pip install paho-mqtt pyYaml wmi
 ```
 
+== Task Scheduler ==
+Individual users can run a periodic task via Task Scheduler to: 
+ - export current application name
+ - snap screenshot on demand
+ - receive notifications
+
+Start Task Scheduler (as each user) -> Create Task -> 
+ General:
+ - Name: mqttNanny
+ - Run only when user is logged on
+ Triggers:
+ - New -> Begin a task At logon
+ - Specific User
+ - Repeat task every 1 minute for a duration of Indefinitely
+ - Enabled
+ Actions:
+ - New -> Start a program
+ - Program/script -> Browse -> C:\Program Files\mqttNanny\windowsControl\mqttNannyTaskLauncher.vbs
+
+Next, log out and back in to the account, to start the task.
+
+
 == Caveats ==
 Because of how `query user` command reports active users you have the following situation. When the computer is in the logon screen (that displays a fullscreen image) and the user list is not visible, then the system thinks the screensaver is on and doesn't tick down time. If instead, you are at the logon screen, ready to enter a password (for any user), even if you haven't entered the password, the system will report the currently selected user as active (and screensaver will be marked as off). Thankfully windows will revert to the picture logon screen after ~30s of inactivity, so it shouldn't waste too much time...
