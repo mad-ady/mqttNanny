@@ -1,4 +1,4 @@
-== Windows dependencies/limitations ==
+# Windows dependencies/limitations
  - Requires Windows 10 Pro (the Home version lacks some of the tools needed, like query user), at least version 2004
  - Requires PowerShell at least version 5.1
 ```
@@ -29,15 +29,23 @@ PS C:\WINDOWS\system32> query user
   https://www.askvg.com/windows-10-fix-notifications-not-showing-while-playing-games-or-full-screen-videos/
   WIN + I -> Focus Assist -> Automatic Rules -> Disable "While playing a game/When I'm using an app in full screen mode"
 
-== Installation ==
-Install python3 (e.g. via `choco install python3 pip`)
+# Manual installation
+ - Install python3 (e.g. via `choco install python3 pip`)
 
-From an Administrator PowerShell run:
+ - From an Administrator PowerShell run:
 ```
 pip install paho-mqtt pyYaml wmi
 ```
 
-== Task Scheduler ==
+ - Either unzip the project or use git clone to copy it to C:\Program Files\mqttNanny (as Administrator)
+
+ - Edit configuration at C:\Program Files\mqttNanny\mqttNanny-windows.yaml
+
+ - TODO: Set up a system service
+
+ - Set up Task Scheduler for each account to export some info (see next section)
+ 
+## Task Scheduler
 Individual users can run a periodic task via Task Scheduler to: 
  - export current application name
  - snap screenshot on demand
@@ -58,6 +66,5 @@ Start Task Scheduler (as each user) -> Create Task ->
 
 Next, log out and back in to the account, to start the task.
 
-
-== Caveats ==
+# Caveats
 Because of how `query user` command reports active users you have the following situation. When the computer is in the logon screen (that displays a fullscreen image) and the user list is not visible, then the system thinks the screensaver is on and doesn't tick down time. If instead, you are at the logon screen, ready to enter a password (for any user), even if you haven't entered the password, the system will report the currently selected user as active (and screensaver will be marked as off). Thankfully windows will revert to the picture logon screen after ~30s of inactivity, so it shouldn't waste too much time...
