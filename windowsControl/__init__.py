@@ -41,6 +41,8 @@ logger = logging.getLogger(__name__)
 
 
 LOCAL_ALLOWANCE_PATH=localPath
+#cache profile data so we don't query windows so often
+USERPROFILE = {}
 
 def externalNotify(program, message):
     """Send a message out via telegram or external script"""
@@ -257,6 +259,10 @@ def getCurrentUserTempPath():
 
     (user, display) = getUserForDisplay('console')
     if user:
+        #check the cache first
+        if user in USERPROFILE:
+            return USERPROFILE[user]['path']
+
         # ask windows via WMI to get the user's SID and homedir name
         #
         #$user = Get-WmiObject -Namespace root/cimv2 -Class win32_useraccount -Filter "LocalAccount=True AND Name='$username'"
@@ -270,7 +276,12 @@ def getCurrentUserTempPath():
             if(len(profileList)):
                 homedir = profileList[0].LocalPath
                 # we will append AppData\Local\Temp to the path
-                return homedir + "\\AppData\\Local\\Temp\\"
+                path = homedir + "\\AppData\\Local\\Temp\\"
+                # save to cache
+                USERPROFILE[user] = {}
+                USERPROFILE[user]['path'] = homedir + "\\AppData\\Local\\Temp\\"
+                USERPROFILE[user]['SID'] = accountList[0].SID
+                return path
     else:
         #we couldn't find a user logged in. Return None
         logger.warning("Couldn't find a user logged in")
