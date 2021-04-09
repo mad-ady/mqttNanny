@@ -52,10 +52,13 @@ pip install paho-mqtt pyYaml wmi
    ```
    choco install nssm
    ```
-   - Configure the mqttNanny service
+   - Configure the mqttNanny service (sadly, we need to use PROGRA~1 to avoid spaces)
    ```
-   nssm install mqttNanny "C:\Python39\python.exe" "C:\Program Files\mqttNanny\mqttNanny.py"
-   nssm set mqttNanny AppDirectory "c:\Program Files\mqttNanny"
+   nssm install mqttNanny "C:\Python39\python.exe" "C:\Progra~1\mqttNanny\mqttNanny.py"
+   nssm set mqttNanny AppDirectory "c:\Progra~1\mqttNanny"
+   # optional, for debugging
+   nssm set mqttNanny AppStdout 'C:\Program Files\mqttNanny\mqttNanny-daemon-stdout.txt'
+   nssm set mqttNanny AppStderr 'C:\Program Files\mqttNanny\mqttNanny-daemon-stderr.txt'
    nssm start mqttNanny
    ```
 
