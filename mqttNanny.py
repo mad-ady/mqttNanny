@@ -90,7 +90,7 @@ def parseConfig():
     global conf
     conffile = "/etc/mqttNanny.yaml"
     if platform.system() == "Windows":
-        conffile = localPath+"\\mqttNanny.yaml"
+        conffile = localPath+"\\mqttNanny-windows.yaml"
     with open(conffile, 'r') as stream:
         try:
             conf = yaml.load(stream, Loader=yaml.SafeLoader)

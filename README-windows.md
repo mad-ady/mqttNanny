@@ -41,10 +41,26 @@ pip install paho-mqtt pyYaml wmi
 
  - Edit configuration at C:\Program Files\mqttNanny\mqttNanny-windows.yaml
 
- - TODO: Set up a system service
+ - Test - run manually via a Privileged PowerShell: 
+ ```
+ cd "c:\Program Files\mqttNanny"
+ python mqttNanny.py
+ ```
+
+ - Run as a system service (via Privileged PowerShell)
+   - install NSSM (The Non-Sucking Service Manager) https://nssm.cc/download
+   ```
+   choco install nssm
+   ```
+   - Configure the mqttNanny service
+   ```
+   nssm install mqttNanny "C:\Python39\python.exe" "C:\Program Files\mqttNanny\mqttNanny.py"
+   nssm set mqttNanny AppDirectory "c:\Program Files\mqttNanny"
+   nssm start mqttNanny
+   ```
 
  - Set up Task Scheduler for each account to export some info (see next section)
- 
+
 ## Task Scheduler
 Individual users can run a periodic task via Task Scheduler to: 
  - export current application name
@@ -52,19 +68,27 @@ Individual users can run a periodic task via Task Scheduler to:
  - receive notifications
 
 Start Task Scheduler (as each user) -> Create Task -> 
- General:
- - Name: mqttNanny
- - Run only when user is logged on
- Triggers:
- - New -> Begin a task At logon
- - Specific User
- - Repeat task every 1 minute for a duration of Indefinitely
- - Enabled
- Actions:
- - New -> Start a program
- - Program/script -> Browse -> C:\Program Files\mqttNanny\windowsControl\mqttNannyTaskLauncher.vbs
+ - General:
+   - Name: mqttNanny-$username
+   - Run only when user is logged on
+ - Triggers:
+   - New -> Begin a task At logon
+   - Specific User
+   - Repeat task every 1 minute for a duration of Indefinitely
+   - Enabled
+ - Actions:
+   - New -> Start a program
+   - Program/script -> C:\Windows\System32\wscript.exe
+   - Add arguments (optional): "C:\Program Files\mqttNanny\windowsControl\mqttNannyTaskLauncher.vbs"
+ - Conditions:
+   - Power - uncheck Start the task only if computer is on AC power
+ - Settings:
+   - Uncheck Stop the task if it runs longer than
 
 Next, log out and back in to the account, to start the task.
 
 # Caveats
-Because of how `query user` command reports active users you have the following situation. When the computer is in the logon screen (that displays a fullscreen image) and the user list is not visible, then the system thinks the screensaver is on and doesn't tick down time. If instead, you are at the logon screen, ready to enter a password (for any user), even if you haven't entered the password, the system will report the currently selected user as active (and screensaver will be marked as off). Thankfully windows will revert to the picture logon screen after ~30s of inactivity, so it shouldn't waste too much time...
+ - Because of how `query user` command reports active users you have the following situation. When the computer is in the logon screen (that displays a fullscreen image) and the user list is not visible, then the system thinks the screensaver is on and doesn't tick down time. If instead, you are at the logon screen, ready to enter a password (for any user), even if you haven't entered the password, the system will report the currently selected user as active (and screensaver will be marked as off). Thankfully windows will revert to the picture logon screen after ~30s of inactivity, so it shouldn't waste too much time...
+ - The code hardcodes the "C:\Program Files" path in some places. If it's not correct for your system, please change it in:
+   - mqttNannyTaskLauncher.vbs
+ - The code expects that the user's %TEMP% dirs live at $USER/AppData/Local/Temp
