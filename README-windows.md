@@ -37,7 +37,7 @@ PS C:\WINDOWS\system32> query user
 pip install paho-mqtt pyYaml wmi
 ```
 
- - Either unzip the project or use git clone to copy it to C:\Program Files\mqttNanny (as Administrator)
+ - Either unzip the project's files or use git clone to copy it to C:\Program Files\mqttNanny (as Administrator)
 
  - Edit configuration at C:\Program Files\mqttNanny\mqttNanny-windows.yaml
 
@@ -79,7 +79,8 @@ Start Task Scheduler (as each user) -> Create Task ->
  - Actions:
    - New -> Start a program
    - Program/script -> C:\Windows\System32\wscript.exe
-   - Add arguments (optional): "C:\Program Files\mqttNanny\windowsControl\mqttNannyTaskLauncher.vbs"
+   - Add arguments (optional): "C:\Program Files\mqttNanny\windowsControl\mqttNannyTaskLauncher.vbs" 
+   - NOTE: The arguments must contain the quotes, otherwise it will be interpreted as two arguments!
  - Conditions:
    - Power - uncheck Start the task only if computer is on AC power
  - Settings:
