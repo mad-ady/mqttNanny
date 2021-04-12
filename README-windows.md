@@ -39,7 +39,7 @@ pip install paho-mqtt pyYaml wmi
 
  - Either unzip the project's files or use git clone to copy it to C:\Program Files\mqttNanny (as Administrator)
 
- - Edit configuration at C:\Program Files\mqttNanny\mqttNanny-windows.yaml
+ - Edit configuration at C:\Program Files\mqttNanny\mqttNanny.yaml
 
  - Test - run manually via a Privileged PowerShell: 
  ```
@@ -61,6 +61,7 @@ pip install paho-mqtt pyYaml wmi
    nssm set mqttNanny AppStderr 'C:\Program Files\mqttNanny\mqttNanny-daemon-stderr.txt'
    nssm start mqttNanny
    ```
+  Note, that if using AppStdout, AppStderr, the logs are not rotate and will continue to grow...
 
  - Set up Task Scheduler for each account to export some info (see next section)
 
