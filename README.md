@@ -1,20 +1,20 @@
 # mqttNanny
-Provide time-based access to a linux desktop system for kids, cutting access when time runs out, keeping an eye on foreground programs
+Provide time-based access to a linux/windows desktop system for kids, cutting access when time runs out, keeping an eye on foreground programs
 
 The code is a Python 3 script that runs as a daemon. It has two operation modes - local and remote. It starts in local mode when it can't connect to a MQTT broker. In this mode it loads its limits from a file and is less flexible. When running in remote mode it gets the allowance for the current user from a MQTT broker and allows the parent to control (and follow what the user is doing) dynamically. Basically, remote mode offers all the features, while local mode is a fallback in case of connectivity issues.
 The main program loop runs every minute and gathers (and reports) information:
 * what is the active TTY?
-* what user is logged in using X11 in the current TTY?
+* what user is logged in using X11/Windows in the current TTY?
 * is the screensaver running?
 * what is the active application title?
 
-For the currently logged in user a counter is decremented every minute while the screensaver is not running. There are some notifications sent to the user (via notify-send and audible) when there's 10/5/1 minutes left. When time runs out, the screensaver is enabled and the user account is disabled (makes password login fail). Should the screensaver fail to enable 5 times in a row, the system is shutdown instead. Once allowance is greater than zero, the daemon restores the password of that account.
+For the currently logged in user a counter is decremented every minute while the screensaver is not running. There are some notifications sent to the user (via notify-send/Windows notifications and audible) when there's 10/5/1 minutes left. When time runs out, the screensaver is enabled (or user disconnected) and the user account is disabled (makes password login fail). Should the screensaver fail to enable 5 times in a row, the system is shutdown instead. Once allowance is greater than zero, the daemon restores the password of that account.
 
 MQTT gives you the ability to see the collected data, to change the allowance for each user and also to request screenshots of the user's desktop session.
 
-You may need to integrate it with MQTT and HomeAssistant (for best results). The full integration is out of scope of this readme.
+You may need to integrate it with MQTT and HomeAssistant (for best results). The full integration is out of scope of this readme, but some details are at the end.
 
-# Installation and configuration
+# Linux: Installation and configuration
 You can download and install the code from my github page:
 ```
 $ sudo apt-get install git
@@ -41,28 +41,7 @@ $ cp /usr/share/applications/xscreensaver-properties.desktop ~/.config/autostart
 $ sed -i 's/xscreensaver-demo/xscreensaver/' ~/.config/autostart/xscreensaver-properties.desktop
 ```
 Also, make sure the system time is set correctly at boot (either via a RTC, NTP or fake-hwclock), otherwise local mode timekeeping won't work correctly.
-
-You'll need to edit the configuration (/etc/mqttNanny.yaml) and set your relevant defaults. Make sure indenting is correct in the file (you can validate it with http://www.yamllint.com/), otherwise the program will fail to start. The options available are described below:
-```
-mqttServer - the ip/dns name of your MQTT broker
-mqttPort - the TCP port your broker runs on (default is 1883)
-mqttUser/mqttPass - your mqtt credentials. If your broker doesn't use authentication, simply omit the lines
-baseTopic - a prefix used to build the topics used to send/receive messages. I personally use ha/<computer-name>/
-mqttTimeTopicSuffix - the time remaining for each user will be transmitted in a topic built from <baseTopic>/<username>/<mqttTimeTopicSuffix>. In my case it's something like ha/pc/odroid/timeRemaining
-mqttScreenshot - the topic where you want to receive screenshot images (MQTT can transport binary data as well)
-mqttScreenshotCommand - the topic where you can request screenshots or not. This can be mapped to a switch in Home Assistant to toggle screenshots on or off.
-mqttScreenshotDuration - how long until the screenshot feature turns itself off. If you want it always on, set it to 0
-mqttScreenshotInterval - how often (in seconds) should it grab screenshots
-screenshotHeight - resize the screenshot to this height (keeping aspect ratio), for efficiency reasons
-screensaver - mate-screensaver or xscreensaver
-graceTime - on startup, give graceTime minutes by default, if the current allowence is below this limit
-whitelist - list of window title names for foreground apps that you don't want to consume the kid's time (e.g. Zoom, etc)
-checkInterval - how often should the script's internal clock tick. 60 seconds means that allowance is checked every minute. You also get application changes every minute.
-externalNotify - should either be False or point to a program/script that takes a string as argument and sends the message to you. For instance, I set it up to /usr/local/bin/telegram-send and get notified of events through a telegram bot.
-no-signal - should point to an image file that is displayed when screenshots are turned off
-users - contains a list of users to monitor. If a user which is not on the list logs in, their time is not managed, but data about their session and screenshots still get reported via MQTT.
-defaultOfflineTime - how many minutes the user gets at program startup in case the program runs in local mode, without a connection to the MQTT broker. In case a file with the user's current allowance is found in /usr/local/share/mqttNanny/<username>/<date>, that value is loaded instead. That file is updated on every allowance change/decrease. 
-```
+See the configuration reference for what each option does.
 
 For security, make the configuration file readable only by root:
 ```
@@ -88,6 +67,33 @@ $ sudo systemctl start mqttNanny
 You can follow logs to troubleshoot by running:
 ```
 $ sudo journalctl -f -u mqttNanny
+```
+
+# Windows 
+For setting up on windows, see this document:
+[Windows Readme](README-windows.md)
+
+# Configuration syntax
+You'll need to edit the configuration (/etc/mqttNanny.yaml) and set your relevant defaults. Make sure indenting is correct in the file (you can validate it with http://www.yamllint.com/), otherwise the program will fail to start. The options available are described below:
+```
+mqttServer - the ip/dns name of your MQTT broker
+mqttPort - the TCP port your broker runs on (default is 1883)
+mqttUser/mqttPass - your mqtt credentials. If your broker doesn't use authentication, simply omit the lines
+baseTopic - a prefix used to build the topics used to send/receive messages. I personally use ha/<computer-name>/
+mqttTimeTopicSuffix - the time remaining for each user will be transmitted in a topic built from <baseTopic>/<username>/<mqttTimeTopicSuffix>. In my case it's something like ha/pc/odroid/timeRemaining
+mqttScreenshot - the topic where you want to receive screenshot images (MQTT can transport binary data as well)
+mqttScreenshotCommand - the topic where you can request screenshots or not. This can be mapped to a switch in Home Assistant to toggle screenshots on or off.
+mqttScreenshotDuration - how long until the screenshot feature turns itself off. If you want it always on, set it to 0
+mqttScreenshotInterval - how often (in seconds) should it grab screenshots
+screenshotHeight - resize the screenshot to this height (keeping aspect ratio), for efficiency reasons
+screensaver - mate-screensaver or xscreensaver
+graceTime - on startup, give graceTime minutes by default, if the current allowence is below this limit
+whitelist - list of window title names for foreground apps that you don't want to consume the kid's time (e.g. Zoom, etc)
+checkInterval - how often should the script's internal clock tick. 60 seconds means that allowance is checked every minute. You also get application changes every minute.
+externalNotify - should either be False or point to a program/script that takes a string as argument and sends the message to you. For instance, I set it up to /usr/local/bin/telegram-send and get notified of events through a telegram bot.
+no-signal - should point to an image file that is displayed when screenshots are turned off
+users - contains a list of users to monitor. If a user which is not on the list logs in, their time is not managed, but data about their session and screenshots still get reported via MQTT.
+defaultOfflineTime - how many minutes the user gets at program startup in case the program runs in local mode, without a connection to the MQTT broker. In case a file with the user's current allowance is found in /usr/local/share/mqttNanny/<username>/<date>, that value is loaded instead. That file is updated on every allowance change/decrease. 
 ```
 
 # Home Assistant integration

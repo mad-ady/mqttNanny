@@ -13,18 +13,10 @@ import signal
 import os
 from logging.config import dictConfig
 
-""" Dynamically load the corect backend module for the running platform """
 logfile = "/var/log/mqttNanny.log"
 localPath = os.path.dirname(os.path.realpath(__file__))
-if platform.system() == "Linux":
-    import linuxControl as computer
 if platform.system() == "Windows":
-    import windowsControl as computer
     logfile = localPath+"\\mqttNanny.log"
-else:
-    print("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
-    sys.exit(2)
-
 
 logging_config = dict(
     version = 1,
@@ -54,6 +46,15 @@ logging_config = dict(
 dictConfig(logging_config)
 logger = logging.getLogger(__name__)
 
+""" Dynamically load the corect backend module for the running platform """
+
+if platform.system() == "Linux":
+    import linuxControl as computer
+if platform.system() == "Windows":
+    import windowsControl as computer
+else:
+    print("Your system {} is unsupported by this program. Patches are welcome on github.".format(platform.system()))
+    sys.exit(2)
 
 # Prerequisites:
 # * pip: sudo apt-get install python3-pip
@@ -90,7 +91,7 @@ def parseConfig():
     global conf
     conffile = "/etc/mqttNanny.yaml"
     if platform.system() == "Windows":
-        conffile = localPath+"\\mqttNanny-windows.yaml"
+        conffile = localPath+"\\mqttNanny.yaml"
     with open(conffile, 'r') as stream:
         try:
             conf = yaml.load(stream, Loader=yaml.SafeLoader)

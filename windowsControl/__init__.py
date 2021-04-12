@@ -46,7 +46,12 @@ USERPROFILE = {}
 
 def externalNotify(program, message):
     """Send a message out via telegram or external script"""
-    subprocess.run([program, message], stdout=subprocess.PIPE, universal_newlines=True)
+    result = subprocess.run([program, message], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    logger.info("Running command {}".format(result.args))
+    for line in iter(result.stderr.splitlines()):
+        logger.warning(line)
+    for line in iter(result.stdout.splitlines()):
+        logger.info(line)
 
 def getCurrentDisplay():
     """Find the active TTY of this system"""
