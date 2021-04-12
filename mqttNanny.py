@@ -10,6 +10,7 @@ import sys
 import platform
 import re
 import signal
+import socket
 import os
 from logging.config import dictConfig
 
@@ -296,7 +297,7 @@ if conf['externalNotify']:
     timekeeping="remote"
     if(running_local):
         timekeeping="local"
-    computer.externalNotify(conf['externalNotify'], "Starting mqttNanny main loop. Timekeeping is {}".format(timekeeping))
+    computer.externalNotify(conf['externalNotify'], "Starting mqttNanny main loop on "+str(socket.gethostname())+". Timekeeping is {}".format(timekeeping))
 
 
 try:
