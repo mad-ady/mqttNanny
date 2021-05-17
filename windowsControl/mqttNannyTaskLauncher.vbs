@@ -5,6 +5,6 @@
 Dim shell, command
 'Sadly it's difficult to escape spaces or use variables..
 'So we convert c:\Program Files to C:\Progra~1
-command = "powershell.exe -nologo -File c:\Progra~1\mqttNanny\mqttNanny.ps1"
+command = "powershell.exe -nologo -File c:\Progra~1\mqttNanny\windowsControl\mqttNanny.ps1"
 Set shell = CreateObject("WScript.Shell")
 Shell.Run command,0
